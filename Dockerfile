@@ -1,6 +1,10 @@
 FROM node:lts-alpine
 
-COPY . /src
+COPY ./index.html /src/
+
+COPY ./test.js /src/
+
+COPY ./package.json /src/
 
 WORKDIR /src
 
