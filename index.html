@@ -1,0 +1,25 @@
+<html lang="en" dir="ltr">
+    <head>
+        <script src="https://apis.google.com/js/platform.js" async defer></script>
+        <title>Integrating Google Sign-In into your web app</title>
+        <script>
+            function onSignIn(googleUser) {
+                console.log(googleUser);
+                var profile = googleUser.getBasicProfile();
+                console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+                console.log('Name: ' + profile.getName());
+            }
+            function onFailure(err) {
+                console.log(err)
+                alert('Fuck the system2');
+            }
+        </script>
+        <meta name="google-signin-client_id" content="653690169905-v6c8049nd3u2hsf3m3ve58mepjev3ngp.apps.googleusercontent.com">
+    </head>
+    <body>
+        <h1>Hello there!</h1>
+        <p>Heila!</p>
+        <div class="g-signin2" data-onsuccess="onSignIn" data-onfailure="onFailure"></div>
+        <!--  -->
+    </body>
+</html>
