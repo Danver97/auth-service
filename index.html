@@ -1,13 +1,27 @@
 <html lang="en" dir="ltr">
     <head>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
         <script src="https://apis.google.com/js/platform.js" async defer></script>
         <title>Integrating Google Sign-In into your web app</title>
         <script>
             function onSignIn(googleUser) {
-                console.log(googleUser);
-                var profile = googleUser.getBasicProfile();
+                const profile = googleUser.getBasicProfile();
                 console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
                 console.log('Name: ' + profile.getName());
+                const id_token = googleUser.getAuthResponse().id_token;
+                console.log(id_token);
+                $.ajax({
+                    type: 'POST',
+                    url: 'http://localhost:3000/login',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    contentType: 'application/json',
+                    data: JSON.stringify({ id_token }),
+                    success: (result) => {
+                        console.log('Data successfully sent');
+                    }
+                });
             }
             function onFailure(err) {
                 console.log(err)
