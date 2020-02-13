@@ -18,6 +18,20 @@ class Role {
         this.permissions = permissions || [];
     }
 
+    /**
+     * @param {Object} obj 
+     * @param {string} obj.roleId
+     * @param {string} obj.name
+     * @param {Object[]} obj.permissions
+     * @param {string} obj.permissions[].scope
+     * @param {string} obj.permissions[].name
+     * @param {string} obj.permissions[].description
+     */
+    static fromObject(obj) {
+        const permissions = obj.permissions.map(p => Permission.fromObject(p));
+        return new Role(obj.roleId, obj.name, permissions);
+    }
+
     get id() {
         return this.roleId;
     }

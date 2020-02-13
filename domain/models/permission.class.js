@@ -14,6 +14,16 @@ class Permission {
         this.name = name;
         this.description = description;
     }
+
+    /**
+     * @param {Object} obj
+     * @param {string} obj.scope
+     * @param {string} obj.name
+     * @param {string} obj.description
+     */
+    static fromObject(obj) {
+        return new Permission(obj.scope, obj.name, obj.description);
+    }
 }
 
 module.exports = Permission;

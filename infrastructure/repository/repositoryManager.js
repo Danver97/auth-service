@@ -1,4 +1,6 @@
 const dbs = require('@danver97/event-sourcing/eventStore');
+const Role = require('../../domain/models/role.class');
+const Organization = require('../../domain/models/organization.class');
 const orgEvents = require('../../lib/organization-events');
 const ENV = require('../../src/env');
 
@@ -48,6 +50,40 @@ class RepositoryManager {
 
     organizationDeleted(org) {
         return this.saveEvent(org.orgId, org._revisionId, orgEvents.organizationDeleted, { orgId: org.orgId, status: org.status });
+    }
+
+    async getOrganization(orgId) {
+        const events = await this.db.getStream(orgId);
+        let org;
+        events.forEach(e => {
+            switch (e.message) {
+                case orgEvents.organizationCreated:
+                    org = Organization.fromObject(e.payload);
+                    break;
+                case orgEvents.roleAdded:
+                    org.addRole(Role.fromObject(e.payload.role));
+                    break;
+                case orgEvents.roleRemoved:
+                    org.removeRole(e.payload.roleId);
+                    break;
+                case orgEvents.userAdded:
+                    org.addUser(e.payload.userId);
+                    break;
+                case orgEvents.rolesAssignedToUser:
+                    org.assignRolesToUser(e.payload.userId, e.payload.roles);
+                    break;
+                case orgEvents.rolesRemovedFromUser:
+                    org.removeRolesFromUser(e.payload.userId, e.payload.roles);
+                    break;
+                case orgEvents.userRemoved:
+                    org.addUser(e.payload.userId);
+                    break;
+                case orgEvents.organizationDeleted:
+                    org.deleted();
+                    break;
+            }
+        });
+        return org;
     }
 }
 

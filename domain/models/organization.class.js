@@ -8,10 +8,40 @@ class Organization {
      * @param {string} name The name of the organization
      */
     constructor(name) {
+        if (!name)
+            throw OrganizationError.paramError('Missing the following constructor parameter: name');
         this.orgId = uuid();
         this.name = name;
         this._roles = {};
         this._users = {}; // Keeps track of users id of the organization and their roles
+    }
+
+    /**
+     * @param {Object} obj JSON object
+     * @param {string} obj.orgId
+     * @param {string} obj.name
+     * @param {Object[]} obj.roles
+     * @param {string} obj.roles[].roleId
+     * @param {string} obj.roles[].name
+     * @param {Object[]} obj.roles[].permissions
+     * @param {string} obj.roles[].permissions[].scope
+     * @param {string} obj.roles[].permissions[].name
+     * @param {string} obj.roles[].permissions[].description
+     * @param {Object[]} obj.users[]
+     * @param {string} obj.users[].userId
+     * @param {string[]} obj.users[].roles
+     */
+    static fromObject(obj) {
+        const org = new Organization(obj.name);
+        org.orgId = obj.orgId;
+        obj.roles.forEach(r => {
+            role = Role.fromObject(r);
+            org.addRole(role);
+        });
+        obj.users.forEach(u => {
+            org.addUser(u.userId, u.roles);
+        });
+        return org;
     }
 
     isDeleted() {
@@ -135,11 +165,8 @@ class Organization {
     }
 
     get users() {
-        const userList = {};
-        Object.keys(this._users).forEach(k => {
-            userList[k] = Array.from(this._users[k].values());
-        });
-        return userList;
+        return Object.keys(this._users)
+            .map(k => ({ userId: k, roles: Array.from(this._users[k].values()) }));
     }
 
     toJSON() {
