@@ -7,6 +7,7 @@ class OrganizationManager {
     }
 
     async optimisticLocking(func) {
+        let result;
         const limit = 100;
         let lock = false;
         let i = 0;
@@ -14,7 +15,7 @@ class OrganizationManager {
             i++;
             lock = false;
             try {
-                await func();
+                result = await func();
             } catch (e) {
                 if (e instanceof RepositoryError && e.code === RepositoryError.optimisticLockingErrorCode) 
                     lock = true;
@@ -22,12 +23,14 @@ class OrganizationManager {
                     throw e;
             }
         } while (lock && i < limit);
+        return result;
     }
 
     organizationCreated(name) {
-        return this.optimisticLocking(() => {
+        return this.optimisticLocking(async () => {
             const org = new Organization(name);
-            return this.repo.organizationCreated(org);
+            await this.repo.organizationCreated(org);
+            return org.orgId;
         });
     }
 
@@ -67,7 +70,7 @@ class OrganizationManager {
         return this.optimisticLocking(async () => {
             const org = await this.repo.getOrganization(orgId);
             org.removeRolesFromUser(userId, roles);
-            await this.repo.rolesAssignedToUser(org, userId, roles);
+            await this.repo.rolesRemovedFromUser(org, userId, roles);
         });
     }
 
