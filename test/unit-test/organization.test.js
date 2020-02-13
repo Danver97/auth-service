@@ -39,7 +39,7 @@ describe('Organization class unit test', function () {
 
         org = new Organization(name);
         org.addRole(role);
-        assert.deepStrictEqual(org.roles[0], role);
+        assert.deepStrictEqual(org.roles, [role]);
     });
 
     it('check removeRole works', function () {
@@ -53,8 +53,8 @@ describe('Organization class unit test', function () {
         org = new Organization(name);
         org.addRole(role);
         org.removeRole(role.roleId);
-        assert.strictEqual(org.roles[0], undefined);
-        assert.deepStrictEqual(org.roles[0], undefined);
+        assert.deepStrictEqual(org.roles, []);
+        assert.deepStrictEqual(org.roles, []);
     });
 
     it('check addUser works', function () {
@@ -70,7 +70,7 @@ describe('Organization class unit test', function () {
             userId,
             roles: [],
         };
-        assert.deepStrictEqual(org.users[0], expected);
+        assert.deepStrictEqual(org.users, [expected]);
         assert.throws(() => org.addUser(userId), OrganizationError);
 
         org = new Organization(name);
@@ -80,7 +80,7 @@ describe('Organization class unit test', function () {
             userId,
             roles: [role.roleId],
         };
-        assert.deepStrictEqual(org.users[0], expected);
+        assert.deepStrictEqual(org.users, [expected]);
     });
 
     it('check assignRolesToUser works', function () {
@@ -105,7 +105,7 @@ describe('Organization class unit test', function () {
             userId,
             roles: [role.roleId],
         };
-        assert.deepStrictEqual(org.users[0], expected);
+        assert.deepStrictEqual(org.users, [expected]);
     });
 
     it('check removeRolesFromUser works', function () {
@@ -130,7 +130,7 @@ describe('Organization class unit test', function () {
             userId,
             roles: [],
         };
-        assert.deepStrictEqual(org.users[0], expected);
+        assert.deepStrictEqual(org.users, [expected]);
     });
 
     it('check removeUser works', function () {
@@ -144,7 +144,7 @@ describe('Organization class unit test', function () {
         org = new Organization(name);
         org.addUser(userId);
         org.removeUser(userId);
-        assert.strictEqual(org.users[0], undefined);
+        assert.deepStrictEqual(org.users, []);
     });
 
     it('check fromObject works', function () {
@@ -162,12 +162,12 @@ describe('Organization class unit test', function () {
         const org = Organization.fromObject(obj);
         assert.strictEqual(org.orgId, orgId);
         assert.strictEqual(org.name, name);
-        assert.deepStrictEqual(org.roles[0], role);
+        assert.deepStrictEqual(org.roles, [role]);
         const userExpected = {
             userId,
             roles: [role.roleId],
         };
-        assert.deepStrictEqual(org.users[0], userExpected);
+        assert.deepStrictEqual(org.users, [userExpected]);
     });
 
     it('check toJSON works', function () {
