@@ -21,6 +21,10 @@ const errorsTypes = {
         code: 21,
         name: 'userDoesNotExistError',
     },
+    organizationDeletedError: {
+        code: 100,
+        name: 'organizationDeletedError',
+    },
 };
 
 class OrganizationError extends ExtendableError {
@@ -48,6 +52,10 @@ class OrganizationError extends ExtendableError {
     static userDoesNotExistError(msg) {
         return new OrganizationError(msg, OrganizationError.userDoesNotExistErrorCode);
     }
+    
+    static organizationDeletedError(msg) {
+        return new OrganizationError(msg, OrganizationError.organizationDeletedErrorCode);
+    }
 
     static get paramErrorCode() {
         return errorsTypes.paramError.code;
@@ -67,6 +75,10 @@ class OrganizationError extends ExtendableError {
 
     static get userDoesNotExistErrorCode() {
         return errorsTypes.userDoesNotExistError.code;
+    }
+
+    static get organizationDeletedErrorCode() {
+        return errorsTypes.organizationDeletedError.code;
     }
 }
 

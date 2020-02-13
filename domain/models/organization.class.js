@@ -10,6 +10,8 @@ class Organization {
     constructor(name) {
         if (!name)
             throw OrganizationError.paramError('Missing the following constructor parameter: name');
+        if (typeof name !== 'string')
+            throw OrganizationError.paramError('name must be a string');
         this.orgId = uuid();
         this.name = name;
         this._roles = {};
@@ -32,10 +34,12 @@ class Organization {
      * @param {string[]} obj.users[].roles
      */
     static fromObject(obj) {
+        if (!obj)
+            throw OrganizationError.paramError('Missing the following paramter: obj');
         const org = new Organization(obj.name);
         org.orgId = obj.orgId;
         obj.roles.forEach(r => {
-            role = Role.fromObject(r);
+            const role = Role.fromObject(r);
             org.addRole(role);
         });
         obj.users.forEach(u => {
@@ -49,12 +53,13 @@ class Organization {
     }
 
     delete() {
+        this._checkIfDeleted();
         this.status = 'deleted';
     }
 
     _checkIfDeleted() {
         if (this.isDeleted())
-            throw new OrganizationError.organizationDeletedError('Organization is deleted and no more action can be taken on it');
+            throw OrganizationError.organizationDeletedError('Organization is deleted and no more action can be taken on it');
     }
 
     /**
@@ -79,6 +84,8 @@ class Organization {
         this._checkIfDeleted();
         if (typeof roleId !== 'string')
             throw OrganizationError.paramError('roleId must be a string');
+        if (!this._roles[roleId])
+            throw OrganizationError.roleAlreadyExistsError(`role with id ${roleId} does not exist`);
         delete this._roles[roleId];
     }
 
@@ -96,7 +103,7 @@ class Organization {
             throw OrganizationError.userAlreadyExistsError(`user with id ${userId} already exists in the organization`);
         this._users[userId] = new Set();
         if (roles)
-            this.assignRoles(userId, roles);
+            this.assignRolesToUser(userId, roles);
     }
 
     /**

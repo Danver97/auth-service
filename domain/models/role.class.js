@@ -29,7 +29,9 @@ class Role {
      */
     static fromObject(obj) {
         const permissions = obj.permissions.map(p => Permission.fromObject(p));
-        return new Role(obj.roleId, obj.name, permissions);
+        const role = new Role(obj.name, permissions);
+        role.roleId = obj.roleId;
+        return role;
     }
 
     get id() {
