@@ -9,7 +9,13 @@ class Permission {
      */
     constructor(scope, name, description) {
         if (!scope || !name)
-            throw new PermissionError(`Missing the following parameters:${scope ? '' : ' scope'}${name ? '' : ' name'}`);
+            throw PermissionError.paramError(`Missing the following parameters:${scope ? '' : ' scope'}${name ? '' : ' name'}`);
+        if (typeof scope !== 'string')
+            throw PermissionError.paramError('scope must be a string');
+        if (typeof name !== 'string')
+            throw PermissionError.paramError('name must be a string');
+        if (description && typeof description !== 'string')
+            throw PermissionError.paramError('description must be a string');
         this.scope = scope;
         this.name = name;
         this.description = description;
@@ -22,6 +28,8 @@ class Permission {
      * @param {string} obj.description
      */
     static fromObject(obj) {
+        if (!obj)
+            throw PermissionError.paramError('Missing the following parameters: obj');
         return new Permission(obj.scope, obj.name, obj.description);
     }
 }
