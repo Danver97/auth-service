@@ -11,6 +11,8 @@ class Role {
     constructor(name, permissions) {
         if (!name)
             throw new RoleError(`Missing the following parameters:${name ? '' : ' name'}`);
+        if (typeof name !== 'string')
+            throw new RoleError('name must be a string');
         this.roleId = uuid();
         this.name = name;
         if (permissions && (!Array.isArray(permissions) || (permissions.length > 0 && !(permissions[0] instanceof Permission))))
@@ -28,6 +30,8 @@ class Role {
      * @param {string} obj.permissions[].description
      */
     static fromObject(obj) {
+        if (!obj)
+            throw RoleError.paramError('Missing the following parameters: obj');
         const permissions = obj.permissions.map(p => Permission.fromObject(p));
         const role = new Role(obj.name, permissions);
         role.roleId = obj.roleId;
