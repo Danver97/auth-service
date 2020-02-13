@@ -2,7 +2,7 @@ const dbs = require('@danver97/event-sourcing/eventStore');
 const Role = require('../../domain/models/role.class');
 const Organization = require('../../domain/models/organization.class');
 const orgEvents = require('../../lib/organization-events');
-const ENV = require('../../src/env');
+const ENV = require('../../lib/env');
 
 class RepositoryManager {
     constructor(db) {
@@ -21,7 +21,7 @@ class RepositoryManager {
     }
 
     organizationCreated(org) {
-        return this.saveEvent(org.orgId, 1, orgEvents.organizationCreated, org.toJSON());
+        return this.saveEvent(org.orgId, org._revisionId, orgEvents.organizationCreated, org.toJSON());
     }
 
     roleAdded(org, role){
@@ -76,13 +76,14 @@ class RepositoryManager {
                     org.removeRolesFromUser(e.payload.userId, e.payload.roles);
                     break;
                 case orgEvents.userRemoved:
-                    org.addUser(e.payload.userId);
+                    org.removeUser(e.payload.userId);
                     break;
                 case orgEvents.organizationDeleted:
-                    org.deleted();
+                    org.delete();
                     break;
             }
         });
+        org._revisionId = events.length;
         return org;
     }
 }
