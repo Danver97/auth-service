@@ -1,6 +1,10 @@
 const PhoneError = require('../errors/phone.error');
 
 class Phone {
+    /**
+     * @constructor
+     * @param {string} number The phone number
+     */
     constructor(number) {
         if (typeof number !== 'string')
             throw PhoneError.paramError(`number must be a string`);

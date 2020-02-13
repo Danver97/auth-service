@@ -3,7 +3,23 @@ const Gender = require('./gender.class');
 const Phone = require('./phone.class');
 
 class User {
-    constructor(options) {
+    /**
+     * @constructor
+     * @param {Object} options 
+     * @param {string} options.accountId External provider id
+     * @param {string} options.accountType External provider name
+     * @param {string} options.firstname First name of the user
+     * @param {string} options.lastname Last name of the user
+     * @param {string} options.email Email of the user
+     */
+    constructor(options = {}) {
+        if (!options.accountId || !options.accountType || !options.firstname || !options.lastname || !options.email)
+            throw UserError.paramError(`Missing the following params from constructor: 
+            ${options.accountId ? '' : 'options.accountId'}
+            ${options.accountType ? '' : 'options.accountType'}
+            ${options.firstname ? '' : 'options.firstname'}
+            ${options.lastname ? '' : 'options.lastname'}
+            ${options.email ? '' : 'options.email'}`)
         this.accountId = options.accountId;
         this.accountType = options.accountType;
         this.firstname = options.firstname;

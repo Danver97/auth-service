@@ -2,6 +2,7 @@ const assert = require('assert');
 const User = require('../../domain/models/user.class');
 const Gender = require('../../domain/models/gender.class');
 const Phone = require('../../domain/models/phone.class');
+const UserError = require('../../domain/errors/user.error');
 
 describe('User class unit test', function () {
     const options = {
@@ -13,6 +14,22 @@ describe('User class unit test', function () {
     };
 
     it('check constructor works properly', function () {
+        assert.throws(() => new User(), UserError);
+        assert.throws(() => new User({}), UserError);
+        assert.throws(() => new User({ accountId: options.accountId }), UserError);
+        assert.throws(() => new User({ accountId: options.accountId, accountType: options.accountType }), UserError);
+        assert.throws(() => new User({
+            accountId: options.accountId,
+            accountType: options.accountType,
+            firstname: options.firstname,
+        }), UserError);
+        assert.throws(() => new User({
+            accountId: options.accountId,
+            accountType: options.accountType,
+            firstname: options.firstname,
+            lastname: options.lastname,
+        }), UserError);
+
         const user = new User(options);
         assert.strictEqual(user.accountId, options.accountId);
         assert.strictEqual(user.accountType, options.accountType);
@@ -84,8 +101,6 @@ describe('User class unit test', function () {
             gender: g,
             phone,
         };
-        Object.keys(user).forEach(k => console.log(k))
-
         assert.deepStrictEqual(user.toJSON(), expected);
     });
 });

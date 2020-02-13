@@ -7,6 +7,10 @@ const supported = {
 };
 
 class Gender {
+    /**
+     * @constructor
+     * @param {string} g The gender
+     */
     constructor (g) {
         if (!supported[g])
             throw GenderError.paramError('gender type not supported')
