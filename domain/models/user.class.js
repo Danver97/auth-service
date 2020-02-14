@@ -27,6 +27,19 @@ class User {
         this.email = options.email;
     }
 
+    static fromObject(obj) {
+        if (!obj)
+            throw UserError.paramError('Missing the following paramters: obj');
+        const user = new User(obj);
+        if (obj.dob)
+            user.dob = obj.dob;
+        if (obj.gender)
+            user.gender = obj.gender;
+        if (obj.phone)
+            user.phone = obj.phone;
+        return user;
+    }
+
     _isValidDateString(dateStr) {
         const dobRegex = /^((?:19|20)\d{2})(\/|-)(\d?\d)\2(\d?\d)$/;
         const match = dobRegex.exec(dateStr);

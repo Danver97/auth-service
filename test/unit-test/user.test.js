@@ -80,6 +80,15 @@ describe('User class unit test', function () {
         assert.deepStrictEqual(user.phone, phone);
     });
 
+    it('check fromObject', function () {
+        const user = new User(options);
+        user.dob = new Date(1997, 9, 2);
+        user.gender = Gender.MALE;
+        user.phone = new Phone('+393451392795');
+        const user2 = User.fromObject(user.toJSON());
+        assert.deepStrictEqual(user2, user);
+    })
+
     it('check toJSON', function () {
         const user = new User(options);
         const dob = new Date(1997, 9, 2); // 1997/10/02
