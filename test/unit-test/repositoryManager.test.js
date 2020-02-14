@@ -1,6 +1,8 @@
 const assert = require('assert');
 const orgEvents = require('../../lib/organization-events');
+const userEvents = require('../../lib/user-events');
 const repo = require('../../infrastructure/repository/repositoryManager')('testdb');
+const User = require('../../domain/models/user.class');
 const Organization = require('../../domain/models/organization.class');
 const Permission = require('../../domain/models/permission.class');
 const Role = require('../../domain/models/role.class');
@@ -14,6 +16,14 @@ describe('Repository Manager unit test', function () {
     const perm = new Permission('auth-service', 'addRole');
     const role = new Role('waiter', [perm]);
     const userId = 'userId1';
+    const userOptions = {
+        accountId: 14546434341331,
+        accountType: 'Google',
+        firstname: 'Christian',
+        lastname: 'Paesante',
+        email: 'chri.pae@gmail.com',
+    };
+    const user = new User(userOptions);
 
     beforeEach(async () => {
         org = new Organization('Risto');
@@ -192,5 +202,26 @@ describe('Repository Manager unit test', function () {
         
         const org2 = await repo.getOrganization(org.orgId);
         assert.deepStrictEqual(org2, org);
+    });
+
+    it('check userCreated works', async function () {
+        // Update
+        await repo.userCreated(user);
+        
+        // Assertions
+        const events = await repo.db.getStream(user.uniqueId);
+        const lastEvent = events[events.length-1];
+        assert.strictEqual(lastEvent.message, userEvents.userCreated);
+        assert.deepStrictEqual(lastEvent.payload, toJSON(user));
+    });
+
+    it('check getCreated works', async function () {
+        // Setup
+        await repo.userCreated(user);
+        
+        // Assertions
+        const userSaved = await repo.getUser(user.uniqueId);
+        user._revisionId = 1;
+        assert.deepStrictEqual(userSaved, user);
     });
 });

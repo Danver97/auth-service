@@ -1,7 +1,9 @@
 const dbs = require('@danver97/event-sourcing/eventStore');
 const Role = require('../../domain/models/role.class');
 const Organization = require('../../domain/models/organization.class');
+const User = require('../../domain/models/user.class');
 const orgEvents = require('../../lib/organization-events');
+const userEvents = require('../../lib/user-events');
 const ENV = require('../../lib/env');
 
 class RepositoryManager {
@@ -85,6 +87,24 @@ class RepositoryManager {
         });
         org._revisionId = events.length;
         return org;
+    }
+
+    userCreated(user) {
+        return this.saveEvent(user.uniqueId, user._revisionId, userEvents.userCreated, user);
+    }
+
+    async getUser(userId) {
+        const events = await this.db.getStream(userId);
+        let user;
+        events.forEach(e => {
+            switch (e.message) {
+                case userEvents.userCreated:
+                    user = User.fromObject(e.payload);
+                    break;
+            }
+        });
+        user._revisionId = events.length;
+        return user;
     }
 }
 
