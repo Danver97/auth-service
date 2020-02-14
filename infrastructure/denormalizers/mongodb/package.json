@@ -1,0 +1,16 @@
+{
+  "name": "reservation-service-denormalizer",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Christian Paesante",
+  "license": "ISC",
+  "dependencies": {
+    "@danver97/event-sourcing": "^2.1.1",
+    "dynamodb-data-types": "^3.0.1",
+    "mongodb": "^3.1.13",
+    "node-native-zip": "^1.1.0",
+    "npm": "^6.9.0",
+    "promisify-cb": "^1.0.0",
+    "uuid": "^3.3.2"
+  }
+}

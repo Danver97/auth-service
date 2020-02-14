@@ -7,3 +7,4 @@ require('./organization.test');
 require('./repositoryManager.test');
 require('./organizationManager.test');
 require('./userManager.test');
+require('./denormalizers');
