@@ -1,0 +1,141 @@
+#%RAML 1.0
+---
+title: Auth API
+version: v1
+baseUri: api.auth.com/{version}
+schemas:
+    Permission:
+        properties:
+            scope: string
+            name: string
+            description: string
+    Role:
+        properties:
+            name: string
+            permissions: Permission[]
+    Organization:
+        properties:
+            name: string
+    
+/login:
+    post:
+        description: |
+        headers: 
+        body: 
+            application/json:
+                properties:
+                    id_token: string
+                    id_provider: string
+        responses: 
+            200:
+                body:
+                    application/json:
+                        access_token: string
+            400:
+/register:
+    post:
+        description: |
+        headers: 
+        body: 
+            application/json:
+                properties:
+                    id_token: string
+                    id_provider: string
+        responses: 
+            200:
+                body:
+                    application/json:
+                        access_token: string
+            400:
+/organizations:
+    post:
+        description: Allows to create a new organization |
+        headers: 
+        body: 
+        responses: 
+            200:
+            400:
+    /{orgId}: 
+        get:
+            description: Allows to retrieve the organization |
+            headers: 
+            body: 
+            responses: 
+                200:
+                    body:
+                        application/json:
+                            type: Organization
+                400:
+                404:
+        /roles:
+            post:
+                description: |
+                headers: 
+                body: 
+                responses: 
+            get:
+                description: Allows to retrieve the organization roles |
+                headers: 
+                body: 
+                responses: 
+                    200:
+                        body:
+                            application/json:
+                                type: Role[]
+            /{roleId}: 
+                put:
+                    description: Allows to modify the role name and its permissions |
+                    headers: 
+                    body: 
+                    responses: 
+                        200:
+                        400:
+                        404:
+                get:
+                    description: Allows to get the role |
+                    headers: 
+                    body: 
+                    responses: 
+                        200:
+                            body:
+                                application/json:
+                                    type: Role
+                        400:
+                        404:
+        /users:
+            post:
+                description: Allows to assign an user to the organization |
+                headers: 
+                body: 
+                responses: 
+            get:
+                description: Allows to retieve the users beloging to the organization |
+                headers: 
+                body: 
+                responses:
+            /{userId}/roles: 
+                post:
+                    description: Allows to assign a role to the user |
+                    headers: 
+                    body: 
+                    responses: 
+                get:
+                    description: Allows to retrieve the user's roles |
+                    headers: 
+                    body: 
+                    responses: 
+                        200:
+                            body:
+                                application/json:
+                                    type: Role[]
+                        400:
+                        404:
+                /{roleId}: 
+                    delete:
+                        description: Allows to remove a role to the user |
+                        headers: 
+                        body: 
+                        responses: 
+                            200:
+                            400:
+                            404:
