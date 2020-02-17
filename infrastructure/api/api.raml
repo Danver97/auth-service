@@ -73,6 +73,9 @@ schemas:
                 headers: 
                 body: 
                 responses: 
+                    200:
+                    400:
+                    404:
             get:
                 description: Allows to retrieve the organization roles |
                 headers: 
@@ -82,6 +85,7 @@ schemas:
                         body:
                             application/json:
                                 type: Role[]
+                    404:
             /{roleId}: 
                 put:
                     description: Allows to modify the role name and its permissions |
@@ -108,17 +112,26 @@ schemas:
                 headers: 
                 body: 
                 responses: 
+                    200:
+                    400:
+                    404:
             get:
                 description: Allows to retieve the users beloging to the organization |
                 headers: 
                 body: 
                 responses:
+                    200:
+                    400:
+                    404:
             /{userId}/roles: 
                 post:
                     description: Allows to assign a role to the user |
                     headers: 
                     body: 
                     responses: 
+                        200:
+                        400:
+                        404:
                 get:
                     description: Allows to retrieve the user's roles |
                     headers: 
@@ -139,3 +152,30 @@ schemas:
                             200:
                             400:
                             404:
+/users/{userId}: 
+    get:
+        description: Allows to retrieve user informations |
+        headers: 
+        body: 
+        responses: 
+            200:
+            400:
+            404:
+    /roles:
+        get:
+            description: Allows to retrieve user's roles |
+            headers: 
+            body: 
+            responses: 
+                200:
+                400:
+                404:
+    /organizations:
+        get:
+            description: Allows to retrieve user's organizations |
+            headers: 
+            body: 
+            responses: 
+                200:
+                400:
+                404:
