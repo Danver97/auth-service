@@ -30,7 +30,7 @@ class OrganizationManager {
         return this.optimisticLocking(async () => {
             const org = new Organization(name);
             await this.repo.organizationCreated(org);
-            return org.orgId;
+            return org;
         });
     }
 

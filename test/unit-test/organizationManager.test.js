@@ -29,7 +29,7 @@ describe('Organization Manager unit test', function () {
 
     it('check organizationCreated works', async function () {
         // Update
-        orgId = await orgMgr.organizationCreated(orgName);
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
 
         // Assertions
         await checkRightEventIsWritten(orgEvents.organizationCreated);
@@ -37,7 +37,7 @@ describe('Organization Manager unit test', function () {
 
     it('check roleAdded works', async function () {
         // Setup
-        orgId = await orgMgr.organizationCreated(orgName);
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
 
         // Update
         await orgMgr.roleAdded(orgId, role);
@@ -48,7 +48,7 @@ describe('Organization Manager unit test', function () {
 
     it('check roleRemoved works', async function () {
         // Setup
-        orgId = await orgMgr.organizationCreated(orgName);
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
         await orgMgr.roleAdded(orgId, role);
 
         // Update
@@ -60,7 +60,7 @@ describe('Organization Manager unit test', function () {
 
     it('check userAdded works', async function () {
         // Setup
-        orgId = await orgMgr.organizationCreated(orgName);
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
 
         // Update
         await orgMgr.userAdded(orgId, userId);
@@ -71,7 +71,7 @@ describe('Organization Manager unit test', function () {
 
     it('check rolesAssignedToUser works', async function () {
         // Setup
-        orgId = await orgMgr.organizationCreated(orgName);
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
         await orgMgr.roleAdded(orgId, role);
         await orgMgr.userAdded(orgId, userId);
 
@@ -84,7 +84,7 @@ describe('Organization Manager unit test', function () {
 
     it('check rolesRemovedFromUser works', async function () {
         // Setup
-        orgId = await orgMgr.organizationCreated(orgName);
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
         await orgMgr.roleAdded(orgId, role);
         await orgMgr.userAdded(orgId, userId);
         await orgMgr.rolesAssignedToUser(orgId, userId, [role.roleId]);
@@ -98,7 +98,7 @@ describe('Organization Manager unit test', function () {
 
     it('check userRemoved works', async function () {
         // Setup
-        orgId = await orgMgr.organizationCreated(orgName);
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
         await orgMgr.userAdded(orgId, userId);
 
         // Update
@@ -110,7 +110,7 @@ describe('Organization Manager unit test', function () {
 
     it('check organizationDeleted works', async function () {
         // Setup
-        orgId = await orgMgr.organizationCreated(orgName);
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
 
         // Update
         await orgMgr.organizationDeleted(orgId);
