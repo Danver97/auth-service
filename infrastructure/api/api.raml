@@ -97,7 +97,6 @@ schemas:
         get:
             description: Allows to retrieve the organization |
             headers: 
-            body: 
             responses: 
                 200:
                     body:
@@ -110,6 +109,7 @@ schemas:
                 description: |
                 headers: 
                 body: 
+                    type: Role
                 responses: 
                     200:
                         body:
@@ -120,7 +120,6 @@ schemas:
             get:
                 description: Allows to retrieve the organization roles |
                 headers: 
-                body: 
                 responses: 
                     200:
                         body:
@@ -142,7 +141,6 @@ schemas:
                 get:
                     description: Allows to get the role |
                     headers: 
-                    body: 
                     responses: 
                         200:
                             body:
@@ -165,7 +163,6 @@ schemas:
             get:
                 description: Allows to retieve the users beloging to the organization |
                 headers: 
-                body: 
                 responses:
                     200:
                         body:
@@ -178,6 +175,9 @@ schemas:
                     description: Allows to assign a role to the user |
                     headers: 
                     body: 
+                        application/json:
+                            properties:
+                                rolesIds: string[]
                     responses: 
                         200:
                         400:
@@ -185,7 +185,6 @@ schemas:
                 get:
                     description: Allows to retrieve the user's roles |
                     headers: 
-                    body: 
                     responses: 
                         200:
                             body:
@@ -197,7 +196,6 @@ schemas:
                     delete:
                         description: Allows to remove a role to the user |
                         headers: 
-                        body: 
                         responses: 
                             200:
                             400:
