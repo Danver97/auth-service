@@ -113,24 +113,33 @@ class QueryManager {
 
     getUser(userId) {
         // Also role info and organization info can be required
-        return this.mongoCollection.findOne({ _id: userId, type: "user" });
+        return this.mongoCollection.findOne({ _id: userId, type: 'user' });
     }
 
     getRole(roleId) {
-        return this.mongoCollection.findOne({ _id: roleId, type: "role" });
+        return this.mongoCollection.findOne({ _id: roleId, type: 'role' });
     }
 
     getOrganization(orgId) {
         // Also infos on its roles and users can be required
-        return this.mongoCollection.findOne({ _id: orgId, type: "organization" });
-    }
-
-    getOrganizationUsers(orgId) {
-        return this.mongoCollection.find({ organizations: orgId, type: "user" }).toArray();
+        return this.mongoCollection.findOne({ _id: orgId, type: 'organization' });
     }
 
     getOrganizationRoles(orgId) {
-        return this.mongoCollection.find({ orgId, type: "role" }).toArray();
+        return this.mongoCollection.find({ orgId, type: 'role' }).toArray();
+    }
+
+    getOrganizationUsers(orgId) {
+        return this.mongoCollection.find({ organizations: orgId, type: 'user' }).toArray();
+    }
+
+    getOrganizationUserRoles(orgId, userId, options = {}) {
+        const user = this.mongoCollection.findOne({ uniqueId: userId, organizations: orgId, type: 'user' });
+        const rolesIds = user.roles[orgId];
+        if (options.idOnly)
+            return rolesIds;
+        const roles = await this.mongoCollection.find({ roleId: { $in: roleIds }}).toArray();
+        return roles;
     }
 
     getFullOrganization(orgId) {
