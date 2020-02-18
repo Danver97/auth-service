@@ -133,24 +133,32 @@ class QueryManager {
         return this.mongoCollection.find({ organizations: orgId, type: 'user' }).toArray();
     }
 
-    getOrganizationUserRoles(orgId, userId, options = {}) {
-        const user = this.mongoCollection.findOne({ uniqueId: userId, organizations: orgId, type: 'user' });
-        const rolesIds = user.roles[orgId];
+    async getOrganizationUserRoles(orgId, userId, options = {}) {
+        const user = await this.mongoCollection.findOne({ uniqueId: userId, organizations: orgId, type: 'user' });
+        const roleIds = user.roles[orgId];
         if (options.idOnly)
-            return rolesIds;
+            return roleIds;
         const roles = await this.mongoCollection.find({ roleId: { $in: roleIds }}).toArray();
         return roles;
     }
 
     getFullOrganization(orgId) {
-        return this.mongoCollection.aggregate(getAllOrgRolesAggPipeline(orgId));
+        return this.getFullOrganization_2calls(orgId);
     }
 
     getFullUser(userId) {
+        return this.getFullUser_2calls(userId);
+    }
+
+    getFullOrganization_aggrPipeline(orgId) {
+        return this.mongoCollection.aggregate(getAllOrgRolesAggPipeline(orgId));
+    }
+
+    getFullUser_aggrPipeline(userId) {
         return this.mongoCollection.aggregate(getAllUserOrgsAndRolesPipeline(userId));
     }
 
-    async getFullOrganization2(orgId) {
+    async getFullOrganization_2calls(orgId) {
         const org = await this.getOrganization(orgId);
         const roles = await this.mongoCollection.find({ orgId, type: 'role' }).toArray();
         const users = await this.mongoCollection.find({ organizations: orgId, type: 'user'}).toArray();
@@ -159,13 +167,13 @@ class QueryManager {
         return org;
     }
 
-    async getFullUser2(userId) {
+    async getFullUser_2calls(userId) {
         const user = await this.getUser(userId);
         const orgIds = user.organizations;
         const roleIds = Object.values(user.roles).reduce((acc, v) => acc.concat(v), []);
 
-        const orgs = await this.mongoCollection.find({ orgId: { $in: orgIds }, type: 'organization' }).toArray();
-        const roles = await this.mongoCollection.find({ roleId: { $in: roleIds }}).toArray();
+        const orgs = await this._getOrganizations(orgIds);
+        const roles = await this._getRoles(roleIds);
 
         const rolesMap = {};
         roles.forEach(r => {
@@ -178,6 +186,37 @@ class QueryManager {
         user.roles = rolesMap;
         return user;
     }
+
+    _getOrganizations(orgIds) {
+        return this.mongoCollection.find({ orgId: { $in: orgIds }, type: 'organization' }).toArray();
+    }
+
+    _getRoles(roleIds) {
+        return this.mongoCollection.find({ roleId: { $in: roleIds }}).toArray();
+    }
+
+    async getUserOrganizations(userId) {
+        const user = await this.getUser(userId);
+        const orgIds = user.organizations;
+
+        const orgs = await this._getOrganizations(orgIds);
+        return orgs;
+    }
+
+    async getUserRoles(userId) {
+        const user = await this.getUser(userId);
+        const roleIds = Object.values(user.roles).reduce((acc, v) => acc.concat(v), []);
+
+        const roles = await this._getRoles(roleIds);
+        const rolesMap = {};
+        roles.forEach(r => {
+            if (!rolesMap[r.orgId])
+                rolesMap[r.orgId] = [];
+            rolesMap[r.orgId].push(r);
+        });
+        return rolesMap;
+    }
+
 }
 
 module.exports = QueryManager;
