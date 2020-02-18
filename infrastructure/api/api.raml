@@ -11,11 +11,43 @@ schemas:
             description: string
     Role:
         properties:
+            orgId: string
             name: string
             permissions: Permission[]
     Organization:
         properties:
             name: string
+            roles: RoleAPI[] | Role[] | string[]
+            users: UserAPI[] | User[] | string[]
+    User:
+        properties:
+            uniqueId: string
+            firstname: string
+            lastname: string
+            email: string
+            organizations: OrganizationAPI[] | Organization[] | string[]
+            roles: RoleAPI[] | Role[] | string[]
+    RoleAPI:
+        properties:
+            data: Role
+            links:
+                properties:
+                    org: string
+                    self: string
+    OrganizationAPI:
+        properties:
+            data: Organization
+            links: 
+                properties:
+                    self: string
+                    roles: string
+                    users: string
+    UserAPI:
+        properties:
+            data: User
+            links:
+                properties:
+                    self: string
     
 /login:
     post:
@@ -52,8 +84,14 @@ schemas:
         description: Allows to create a new organization |
         headers: 
         body: 
+            application/json:
+                properties:
+                    name: string
         responses: 
             200:
+                body:
+                    application/json:
+                        type: OrganizationAPI
             400:
     /{orgId}: 
         get:
@@ -64,7 +102,7 @@ schemas:
                 200:
                     body:
                         application/json:
-                            type: Organization
+                            type: OrganizationAPI
                 400:
                 404:
         /roles:
@@ -74,6 +112,9 @@ schemas:
                 body: 
                 responses: 
                     200:
+                        body:
+                            application/json:
+                                type: RoleAPI
                     400:
                     404:
             get:
@@ -84,7 +125,7 @@ schemas:
                     200:
                         body:
                             application/json:
-                                type: Role[]
+                                type: RoleAPI[]
                     404:
             /{roleId}: 
                 put:
@@ -93,6 +134,9 @@ schemas:
                     body: 
                     responses: 
                         200:
+                            body:
+                                application/json:
+                                    type: RoleAPI
                         400:
                         404:
                 get:
@@ -103,7 +147,7 @@ schemas:
                         200:
                             body:
                                 application/json:
-                                    type: Role
+                                    type: RoleAPI
                         400:
                         404:
         /users:
@@ -113,6 +157,9 @@ schemas:
                 body: 
                 responses: 
                     200:
+                        body:
+                            application/json:
+                                type: UserAPI[]
                     400:
                     404:
             get:
@@ -121,6 +168,9 @@ schemas:
                 body: 
                 responses:
                     200:
+                        body:
+                            application/json:
+                                type: UserAPI[]
                     400:
                     404:
             /{userId}/roles: 
@@ -140,7 +190,7 @@ schemas:
                         200:
                             body:
                                 application/json:
-                                    type: Role[]
+                                    type: RoleAPI[]
                         400:
                         404:
                 /{roleId}: 
@@ -159,6 +209,9 @@ schemas:
         body: 
         responses: 
             200:
+                body:
+                    application/json:
+                        type: UserAPI
             400:
             404:
     /roles:
@@ -168,6 +221,9 @@ schemas:
             body: 
             responses: 
                 200:
+                    body:
+                        application/json:
+                            type: RoleAPI[]
                 400:
                 404:
     /organizations:
@@ -177,5 +233,8 @@ schemas:
             body: 
             responses: 
                 200:
+                    body:
+                        application/json:
+                            type: OrganizationAPI[]
                 400:
                 404:
