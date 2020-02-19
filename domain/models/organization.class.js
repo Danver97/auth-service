@@ -85,7 +85,7 @@ class Organization {
         if (typeof roleId !== 'string')
             throw OrganizationError.paramError('roleId must be a string');
         if (!this._roles[roleId])
-            throw OrganizationError.roleAlreadyExistsError(`role with id ${roleId} does not exist`);
+            throw OrganizationError.roleDoesNotExistError(`role with id ${roleId} does not exist`);
         delete this._roles[roleId];
     }
 
@@ -142,7 +142,7 @@ class Organization {
         if (!this._users[userId])
             throw OrganizationError.userDoesNotExistError(`user with id ${userId} does not exist in the organization`);
         if (!Array.isArray(roles) || roles.length <= 0 || typeof roles[0] !== 'string')
-            throw OrganizationError.paramError('roles must be a non empty array of role names');
+            throw OrganizationError.paramError('roles must be a non empty array of role ids');
         roles.forEach(r => {
             if (!this._roles[r])
                 throw OrganizationError.roleDoesNotExistError(`role ${r} does not exist in the organization`);
