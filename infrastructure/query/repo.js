@@ -1,3 +1,5 @@
+const QueryError = require('./query.error');
+
 function getAllOrgRolesAggPipeline(orgId) {
     return [
         { $match: { orgId } },
@@ -111,18 +113,27 @@ class QueryManager {
         this.mongoCollection = mongoCollection;
     }
 
-    getUser(userId) {
+    async getUser(userId) {
         // Also role info and organization info can be required
-        return this.mongoCollection.findOne({ _id: userId, type: 'user' });
+        const user = await this.mongoCollection.findOne({ _id: userId, type: 'user' });
+        if (!user)
+            throw QueryError.notFound(`user with ${userId} not found`);
+        return user;
     }
 
-    getRole(roleId) {
-        return this.mongoCollection.findOne({ _id: roleId, type: 'role' });
+    async getRole(roleId) {
+        const role = await this.mongoCollection.findOne({ _id: roleId, type: 'role' });
+        if (!role)
+            throw QueryError.notFound(`role with ${roleId} not found`);
+        return role;
     }
 
     getOrganization(orgId) {
         // Also infos on its roles and users can be required
-        return this.mongoCollection.findOne({ _id: orgId, type: 'organization' });
+        const org = await this.mongoCollection.findOne({ _id: orgId, type: 'organization' });
+        if (!org)
+            throw QueryError.notFound(`org with ${orgId} not found`);
+        return org;
     }
 
     getOrganizationRoles(orgId) {
