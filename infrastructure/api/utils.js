@@ -13,6 +13,27 @@ function serverError(res, message, code) {
     res.json({ error: message });
 }
 
+function checkParam(paramName, appendParam = false) {
+    return function (req, res, next) {
+        const param = req.params[paramName];
+        if (!param) {
+            clientError(res, `Missing ${paramName} url parameter`);
+            return;
+        }
+        if (appendParam) 
+            req[paramName] = param;
+        next();
+    };
+}
+
+function addParam(paramName) {
+    return function (req, res, next) {
+        const param = req.params[paramName];
+        req[paramName] = param;
+        next();
+    };
+}
+
 function verifyGoogleIdToken(client, idToken, audience) {
     return client.verifyIdToken({
         idToken,
@@ -24,4 +45,6 @@ module.exports = {
     emptyResponse,
     clientError,
     serverError,
+    checkParam,
+    addParam,
 };

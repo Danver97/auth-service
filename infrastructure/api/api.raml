@@ -180,36 +180,44 @@ schemas:
                                 type: UserAPI[]
                     400:
                     404:
-            /{userId}/roles: 
-                post:
-                    description: Allows to assign a role to the user |
+            /{userId}:
+                delete:
+                    description: Allows to remove the user from the organization |
                     headers: 
-                    body: 
-                        application/json:
-                            properties:
-                                rolesIds: string[]
                     responses: 
                         200:
                         400:
                         404:
-                get:
-                    description: Allows to retrieve the user's roles |
-                    headers: 
-                    responses: 
-                        200:
-                            body:
-                                application/json:
-                                    type: RoleAPI[]
-                        400:
-                        404:
-                /{roleId}: 
-                    delete:
-                        description: Allows to remove a role to the user |
+                /roles: 
+                    post:
+                        description: Allows to assign a role to the user |
                         headers: 
+                        body: 
+                            application/json:
+                                properties:
+                                    rolesIds: string[]
                         responses: 
                             200:
                             400:
                             404:
+                    get:
+                        description: Allows to retrieve the user's roles |
+                        headers: 
+                        responses: 
+                            200:
+                                body:
+                                    application/json:
+                                        type: RoleAPI[]
+                            400:
+                            404:
+                    /{roleId}: 
+                        delete:
+                            description: Allows to remove a role from the user |
+                            headers: 
+                            responses: 
+                                200:
+                                400:
+                                404:
 /users/{userId}: 
     get:
         description: Allows to retrieve user informations |
