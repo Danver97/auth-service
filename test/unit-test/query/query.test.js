@@ -2,6 +2,7 @@ const assert = require('assert');
 const MongoMemoryServer = require('mongodb-memory-server').MongoMemoryServer;
 const MongoClient = require('mongodb').MongoClient;
 const queryMgrFunc = require('../../../infrastructure/query');
+const QueryError = require('../../../infrastructure/query/query.error');
 const data = require('./collection.json');
 
 const mongod = new MongoMemoryServer();
@@ -51,12 +52,14 @@ describe('Query Manager unit test', function () {
     });
 
     it('check getOrganization works', async function () {
+        await assert.rejects(() => queryMgr.getOrganization('blablabla'), QueryError);
         const org = orgs.filter(o => o.name === 'Risto')[0];
         const orgData = await queryMgr.getOrganization(org.orgId);
         assert.deepStrictEqual(orgData, org);
     });
 
     it('check getOrganizationRoles works', async function () {
+        await assert.rejects(() => queryMgr.getOrganizationRoles('blablabla'), QueryError);
         const org = orgs.filter(o => o.name === 'Risto')[0];
         const rolesExpected = roles.filter(r => r.orgId === org.orgId);
         const rolesRetrieved = await queryMgr.getOrganizationRoles(org.orgId);
@@ -64,6 +67,7 @@ describe('Query Manager unit test', function () {
     });
 
     it('check getOrganizationUsers works', async function () {
+        await assert.rejects(() => queryMgr.getOrganizationUsers('blablabla'), QueryError);
         const org = orgs.filter(o => o.name === 'Risto')[0];
         const usersExpected = users.filter(u => u.organizations.includes(org.orgId));
         const usersRetrieved = await queryMgr.getOrganizationUsers(org.orgId);
@@ -73,12 +77,18 @@ describe('Query Manager unit test', function () {
     it('check getOrganizationUserRoles works', async function () {
         const user = users.filter(u => u.firstname === 'Christian')[0];
         const orgId = user.organizations[0];
+
+        await assert.rejects(() => queryMgr.getOrganizationUserRoles('blablabla'), QueryError);
+        await assert.rejects(() => queryMgr.getOrganizationUserRoles(orgId, 'blablabla'), QueryError);
+
         const rolesExpected = roles.filter(r => user.roles[orgId].includes(r.roleId));
         const rolesRetrieved = await queryMgr.getOrganizationUserRoles(orgId, user.uniqueId);
         assert.deepStrictEqual(rolesRetrieved, rolesExpected);
     });
 
     it('check getFullOrganization works', async function () {
+        await assert.rejects(() => queryMgr.getFullOrganization('blablabla'), QueryError);
+
         const org = toJSON(orgs.filter(o => o.name === 'Risto')[0]);
         org.users = users.filter(u => u.organizations.includes(org.orgId));
         org.roles = roles.filter(r => r.orgId === org.orgId);
@@ -87,6 +97,8 @@ describe('Query Manager unit test', function () {
     });
 
     it('check getFullUser works', async function () {
+        await assert.rejects(() => queryMgr.getFullUser('blablabla'), QueryError);
+
         const user = users.filter(u => u.firstname === 'Christian')[0];
         user.organizations = orgs.filter(o => user.organizations.includes(o.orgId));
         Object.keys(user.roles).forEach(k => {
@@ -99,6 +111,8 @@ describe('Query Manager unit test', function () {
     });
 
     it('check getUserOrganizations works', async function () {
+        await assert.rejects(() => queryMgr.getUserOrganizations('blablabla'), QueryError);
+
         const user = users.filter(u => u.firstname === 'Christian')[0];
         const expectedOrgs = orgs.filter(o => user.organizations.includes(o.orgId));
 
@@ -107,6 +121,8 @@ describe('Query Manager unit test', function () {
     });
 
     it('check getUserRoles works', async function () {
+        await assert.rejects(() => queryMgr.getUserRoles('blablabla'), QueryError);
+        
         const user = users.filter(u => u.firstname === 'Christian')[0];
         const rolesMapExpected = {}
         Object.keys(user.roles).forEach(k => {

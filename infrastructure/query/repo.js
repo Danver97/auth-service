@@ -132,20 +132,28 @@ class QueryManager {
         // Also infos on its roles and users can be required
         const org = await this.mongoCollection.findOne({ _id: orgId, _type: 'organization' });
         if (!org)
-            throw QueryError.notFound(`org with ${orgId} not found`);
+            throw QueryError.notFound(`organization with ${orgId} not found`);
         return org;
     }
 
-    getOrganizationRoles(orgId) {
-        return this.mongoCollection.find({ orgId, _type: 'role' }).toArray();
+    async getOrganizationRoles(orgId) {
+        const org = await this.getOrganization(orgId);
+        if (!org)
+            throw QueryError.notFound(`organization with ${orgId} not found`);
+        return await this.mongoCollection.find({ orgId, _type: 'role' }).toArray();
     }
 
-    getOrganizationUsers(orgId) {
-        return this.mongoCollection.find({ organizations: orgId, _type: 'user' }).toArray();
+    async getOrganizationUsers(orgId) {
+        const org = await this.getOrganization(orgId);
+        if (!org)
+            throw QueryError.notFound(`organization with ${orgId} not found`);
+        return await this.mongoCollection.find({ organizations: orgId, _type: 'user' }).toArray();
     }
 
     async getOrganizationUserRoles(orgId, userId, options = {}) {
         const user = await this.mongoCollection.findOne({ uniqueId: userId, organizations: orgId, _type: 'user' });
+        if (!user)
+            throw QueryError.notFound(`user with ${userId} belonging to organization with id ${orgId} not found`);
         const roleIds = user.roles[orgId];
         if (options.idOnly)
             return roleIds;
