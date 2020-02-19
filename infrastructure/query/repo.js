@@ -128,7 +128,7 @@ class QueryManager {
         return role;
     }
 
-    getOrganization(orgId) {
+    async getOrganization(orgId) {
         // Also infos on its roles and users can be required
         const org = await this.mongoCollection.findOne({ _id: orgId, type: 'organization' });
         if (!org)
