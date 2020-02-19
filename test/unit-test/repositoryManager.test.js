@@ -6,6 +6,7 @@ const User = require('../../domain/models/user.class');
 const Organization = require('../../domain/models/organization.class');
 const Permission = require('../../domain/models/permission.class');
 const Role = require('../../domain/models/role.class');
+const RepositoryError = require('../../infrastructure/repository/repo.error');
 
 function toJSON(obj) {
     return JSON.parse(JSON.stringify(obj));
@@ -177,6 +178,8 @@ describe('Repository Manager unit test', function () {
     });
 
     it('check getOrganization works', async function () {
+        await assert.rejects(() => repo.getOrganization('blablabla'), RepositoryError);
+
         // Setup
         await repo.organizationCreated(org);
         org._revisionId = 1;
@@ -215,7 +218,9 @@ describe('Repository Manager unit test', function () {
         assert.deepStrictEqual(lastEvent.payload, toJSON(user));
     });
 
-    it('check getCreated works', async function () {
+    it('check getUser works', async function () {
+        await assert.rejects(() => repo.getUser('blablabla'), RepositoryError);
+
         // Setup
         await repo.userCreated(user);
         

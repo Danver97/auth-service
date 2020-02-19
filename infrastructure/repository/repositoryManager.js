@@ -5,6 +5,7 @@ const User = require('../../domain/models/user.class');
 const orgEvents = require('../../lib/organization-events');
 const userEvents = require('../../lib/user-events');
 const ENV = require('../../lib/env');
+const RepositoryError = require('./repo.error');
 
 class RepositoryManager {
     constructor(db) {
@@ -56,6 +57,8 @@ class RepositoryManager {
 
     async getOrganization(orgId) {
         const events = await this.db.getStream(orgId);
+        if (!events || events.length === 0)
+            throw RepositoryError.streamNotFound(`Organization with id ${orgId} not found`);
         let org;
         events.forEach(e => {
             switch (e.message) {
@@ -95,6 +98,8 @@ class RepositoryManager {
 
     async getUser(userId) {
         const events = await this.db.getStream(userId);
+        if (!events || events.length === 0)
+            throw RepositoryError.streamNotFound(`User with id ${userId} not found`);
         let user;
         events.forEach(e => {
             switch (e.message) {

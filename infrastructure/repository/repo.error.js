@@ -5,6 +5,10 @@ const errorsTypes = {
         code: 0,
         name: 'paramError',
     },
+    streamNotFoundError: {
+        code: 1,
+        name: 'streamNotFoundError',
+    },
     optimisticLockingError: {
         code: 10,
         name: 'optimisticLockingError',
@@ -18,15 +22,23 @@ class RepositoryError extends ExtendableError {
     }
 
     static paramError(msg) {
-        return new OrganizationError(msg, OrganizationError.paramErrorCode);
+        return new RepositoryError(msg, RepositoryError.paramErrorCode);
+    }
+
+    static streamNotFound(msg) {
+        return new RepositoryError(msg, RepositoryError.streamNotFoundErrorCode);
     }
 
     static optimisticLockingError(msg) {
-        return new OrganizationError(msg, OrganizationError.optimisticLockingErrorCode);
+        return new RepositoryError(msg, RepositoryError.optimisticLockingErrorCode);
     }
 
     static get paramErrorCode() {
         return errorsTypes.paramError.code;
+    }
+
+    static get streamNotFoundErrorCode() {
+        return errorsTypes.streamNotFoundError.code;
     }
     
     static get optimisticLockingErrorCode() {
