@@ -47,6 +47,7 @@ describe('writer unit test', function () {
 
         // Assertions
         const doc = await collection.findOne({ _id: org.orgId });
+        org._type = 'organization';
         assert.deepStrictEqual(doc, toJSON(org));
     });
 
@@ -60,6 +61,7 @@ describe('writer unit test', function () {
 
         // Assertions
         const doc = await collection.findOne({ _id: role.roleId });
+        role._type = 'role';
         assert.deepStrictEqual(doc, toJSON(role));
     });
 
@@ -175,6 +177,7 @@ describe('writer unit test', function () {
 
         // Assertions
         const doc = await collection.findOne({ _id: user.uniqueId });
+        user._type = 'user';
         assert.deepStrictEqual(doc, user);
     });
 

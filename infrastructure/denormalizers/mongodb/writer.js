@@ -4,6 +4,12 @@ const writerFunc = require('./writer');
 
 let writer = null;
 
+const docTypes = {
+    organization: 'organization',
+    role: 'role',
+    user: 'user',
+};
+
 class Writer {
     constructor(url, dbName, collectionName) {
         if (!url || !dbName || !collectionName) {
@@ -63,6 +69,7 @@ class Writer {
     organizationCreated(e, cb) {
         const org = e.payload;
         org._id = org.orgId;
+        org._type = docTypes.organization;
         return Promisify(() => this.collection.insertOne(org), cb);
     }
 
@@ -71,6 +78,7 @@ class Writer {
         const role = e.payload.role;
         role._id = role.roleId;
         role.orgId = orgId;
+        role._type = docTypes.role;
         return Promisify(() => this.collection.insertOne(role), cb);
     }
 
@@ -117,6 +125,7 @@ class Writer {
     userCreated(e, cb) {
         const user = e.payload;
         user._id = user.uniqueId;
+        user._type = docTypes.user;
         return Promisify(() => this.collection.insertOne(user), cb);
     }
 }
