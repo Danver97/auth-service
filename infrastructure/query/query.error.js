@@ -17,11 +17,19 @@ class QueryError extends ExtendableError {
         return errorsTypes;
     }
 
-    static get paramError() {
+    static paramError(msg) {
+        return new QueryError(msg, QueryError.paramErrorCode);
+    }
+
+    static notFound(msg) {
+        return new QueryError(msg, QueryError.notFoundCode);
+    }
+
+    static get paramErrorCode() {
         return errorsTypes.paramError.code;
     }
 
-    static get notFound() {
+    static get notFoundCode() {
         return errorsTypes.notFound.code;
     }
 }
