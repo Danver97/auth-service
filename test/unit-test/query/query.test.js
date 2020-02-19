@@ -33,9 +33,9 @@ describe('Query Manager unit test', function () {
     });
 
     beforeEach(() => {
-        users = toJSON(data.filter(d => d.type === 'user'));
-        orgs = toJSON(data.filter(d => d.type === 'organization'));
-        roles = toJSON(data.filter(d => d.type === 'role'));
+        users = toJSON(data.filter(d => d._type === 'user'));
+        orgs = toJSON(data.filter(d => d._type === 'organization'));
+        roles = toJSON(data.filter(d => d._type === 'role'));
     })
 
     it('check getUser works', async function () {
