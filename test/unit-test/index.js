@@ -9,3 +9,4 @@ require('./organizationManager.test');
 require('./userManager.test');
 require('./denormalizers');
 require('./query');
+require('./api.test');
