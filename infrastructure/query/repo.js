@@ -143,11 +143,15 @@ class QueryManager {
         return await this.mongoCollection.find({ orgId, _type: 'role' }).toArray();
     }
 
-    async getOrganizationUsers(orgId) {
+    async getOrganizationUsers(orgId, offset = 0, limit = 200) {
         const org = await this.getOrganization(orgId);
         if (!org)
             throw QueryError.notFound(`organization with ${orgId} not found`);
-        return await this.mongoCollection.find({ organizations: orgId, _type: 'user' }).toArray();
+        const users = await this.mongoCollection.find({ organizations: orgId, _type: 'user' }).skip(offset).limit(limit).toArray();
+        users.forEach(u => {
+            u.roles = { [orgId]: u.roles[orgId] };
+        });
+        return users;
     }
 
     async getOrganizationUserRoles(orgId, userId, options = {}) {

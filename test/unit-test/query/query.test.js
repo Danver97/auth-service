@@ -70,6 +70,9 @@ describe('Query Manager unit test', function () {
         await assert.rejects(() => queryMgr.getOrganizationUsers('blablabla'), QueryError);
         const org = orgs.filter(o => o.name === 'Risto')[0];
         const usersExpected = users.filter(u => u.organizations.includes(org.orgId));
+        usersExpected.forEach(u => {
+            u.roles = { [org.orgId]: u.roles[org.orgId] };
+        });
         const usersRetrieved = await queryMgr.getOrganizationUsers(org.orgId);
         assert.deepStrictEqual(usersRetrieved, usersExpected);
     });
