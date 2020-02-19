@@ -121,10 +121,10 @@ class QueryManager {
         return user;
     }
 
-    async getRole(roleId) {
-        const role = await this.mongoCollection.findOne({ _id: roleId, _type: 'role' });
+    async getRole(orgId, roleId) {
+        const role = await this.mongoCollection.findOne({ _id: roleId, orgId, _type: 'role' });
         if (!role)
-            throw QueryError.notFound(`role with ${roleId} not found`);
+            throw QueryError.notFound(`role with ${roleId} belonging to organization with id ${orgId} not found`);
         return role;
     }
 

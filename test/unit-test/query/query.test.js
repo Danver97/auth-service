@@ -47,7 +47,7 @@ describe('Query Manager unit test', function () {
 
     it('check getRole works', async function () {
         const role = roles.filter(r => r.name === 'role1')[0];
-        const roleData = await queryMgr.getRole(role.roleId);
+        const roleData = await queryMgr.getRole(role.orgId, role.roleId);
         assert.deepStrictEqual(roleData, role);
     });
 
