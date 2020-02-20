@@ -1,5 +1,6 @@
 const Organization = require('../models/organization.class');
 const RepositoryError = require('../../infrastructure/repository/repo.error');
+const OrganizationManagerError = require('../errors/organizationManager.error');
 
 class OrganizationManager {
     constructor(repo) {
@@ -39,6 +40,20 @@ class OrganizationManager {
             const org = await this.repo.getOrganization(orgId);
             org.addRole(role);
             await this.repo.roleAdded(org, role);
+        });
+    }
+
+    roleChanged(orgId, roleId, changes) {
+        return this.optimisticLocking(async () => {
+            if (!changes.name && !changes.permissions)
+                throw new OrganizationManagerError('No changes to apply to role');
+            const org = await this.repo.getOrganization(orgId);
+            const role = org.getRole(roleId);
+            if (changes.name)
+                role.changeName(changes.name);
+            if (changes.permissions)
+                role.changePermissions(changes.permissions);
+            await this.repo.roleChanged(org, role);
         });
     }
 

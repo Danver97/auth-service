@@ -5,6 +5,7 @@ const Organization = require('../../domain/models/organization.class');
 const Permission = require('../../domain/models/permission.class');
 const Role = require('../../domain/models/role.class');
 const OrganizationManager = require('../../domain/logic/organizationManager');
+const OrganizationManagerError = require('../../domain/errors/organizationManager.error');
 
 let orgMgr = new OrganizationManager(repo);
 
@@ -13,6 +14,7 @@ describe('Organization Manager unit test', function () {
     let orgId;
     const orgName = 'Risto';
     const perm = new Permission('auth-service', 'addRole');
+    const perm2 = new Permission('auth-service', 'removeRole');
     const role = new Role('waiter', [perm]);
     const userId = 'userId1';
 
@@ -44,6 +46,21 @@ describe('Organization Manager unit test', function () {
 
         // Assertions
         await checkRightEventIsWritten(orgEvents.roleAdded);
+    });
+
+    it('check roleChanged works', async function () {
+        // Setup
+        orgId = (await orgMgr.organizationCreated(orgName)).orgId;
+        await orgMgr.roleAdded(orgId, role);
+
+        // Update
+        role.changeName('name2');
+        role.changePermissions([perm2]);
+        await orgMgr.roleChanged(orgId, role.roleId, role);
+
+        // Assertions
+        await assert.rejects(() => orgMgr.roleChanged(orgId, role.roleId, {}), OrganizationManagerError);
+        await checkRightEventIsWritten(orgEvents.roleChanged);
     });
 
     it('check roleRemoved works', async function () {
