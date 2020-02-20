@@ -46,7 +46,7 @@ class OrganizationManager {
     roleChanged(orgId, roleId, changes) {
         return this.optimisticLocking(async () => {
             if (!changes.name && !changes.permissions)
-                throw new OrganizationManagerError('No changes to apply to role');
+                throw OrganizationManagerError.noRoleChangesError('No changes to apply to role');
             const org = await this.repo.getOrganization(orgId);
             const role = org.getRole(roleId);
             if (changes.name)
