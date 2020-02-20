@@ -42,6 +42,20 @@ describe('Organization class unit test', function () {
         assert.deepStrictEqual(org.roles, [role]);
     });
 
+    it('check getRole works', function () {
+        let org = new Organization(name);
+        assert.throws(() => org.getRole(), OrganizationError);
+        assert.throws(() => org.getRole('aa'), OrganizationError);
+        assert.throws(() => org.getRole({}), OrganizationError);
+        org.delete();
+        assert.throws(() => org.getRole(role.roleId), OrganizationError);
+
+        org = new Organization(name);
+        org.addRole(role);
+        const roleRetrieved = org.getRole(role.roleId);
+        assert.deepStrictEqual(roleRetrieved, role);
+    });
+
     it('check removeRole works', function () {
         let org = new Organization(name);
         assert.throws(() => org.removeRole(), OrganizationError);

@@ -76,9 +76,23 @@ class Organization {
     }
 
     /**
+     * Retrieves a Role from the Organization.  
+     * If not present, throws an error.
+     * @param {string} roleId Id identifying the role to remove
+     */
+    getRole(roleId) {
+        this._checkIfDeleted();
+        if (typeof roleId !== 'string')
+            throw OrganizationError.paramError('roleId must be a string');
+        if (!this._roles[roleId])
+            throw OrganizationError.roleDoesNotExistError(`role with id ${roleId} does not exist`);
+        return this._roles[roleId];
+    }
+
+    /**
      * Removes an existing Role from the Organization.  
      * If not present, throws an error.
-     * @param {string} roleName Name identifying the role to remove
+     * @param {string} roleId Id identifying the role to remove
      */
     removeRole(roleId) {
         this._checkIfDeleted();
