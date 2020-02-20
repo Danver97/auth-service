@@ -22,6 +22,29 @@ describe('Role class unit test', function () {
         assert.deepStrictEqual(role.permissions, [perm]);
     });
 
+    it('check changeName works', function () {
+        const role = new Role(name);
+        assert.throws(() => role.changeName(), RoleError);
+        assert.throws(() => role.changeName({}), RoleError);
+        const newName = 'roleName2';
+        role.changeName(newName);
+        assert.strictEqual(role.name, newName);
+    });
+
+    it('check changeName works', function () {
+        const role = new Role(name);
+        assert.throws(() => role.changePermissions(), RoleError);
+        assert.throws(() => role.changePermissions({}), RoleError);
+        assert.throws(() => role.changePermissions([0]), RoleError);
+        assert.throws(() => role.changePermissions(['0']), RoleError);
+        assert.throws(() => role.changePermissions([{}]), RoleError);
+        const newPerm = new Permission('auth-service', 'removeRole');
+        role.changePermissions([perm, newPerm]);
+        assert.deepStrictEqual(role.permissions, [perm, newPerm]);
+        role.changePermissions([newPerm]);
+        assert.deepStrictEqual(role.permissions, [newPerm]);
+    });
+
     it('check fromObject works', function () {
         assert.throws(() => Role.fromObject(), RoleError);
         const obj = {

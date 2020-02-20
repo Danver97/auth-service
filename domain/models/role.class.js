@@ -9,14 +9,11 @@ class Role {
      * @param {Permission[]} [permissions] The list of permission of this Role
      */
     constructor(name, permissions) {
-        if (!name)
-            throw new RoleError(`Missing the following parameters:${name ? '' : ' name'}`);
-        if (typeof name !== 'string')
-            throw new RoleError('name must be a string');
+        this._checkName(name);
         this.roleId = uuid();
         this.name = name;
-        if (permissions && (!Array.isArray(permissions) || (permissions.length > 0 && !(permissions[0] instanceof Permission))))
-            throw new RoleError('permissions must be an array of Permission instances');
+        if (permissions)
+            this._checkArrayOfPermissions(permissions);
         this.permissions = permissions || [];
     }
 
@@ -36,6 +33,28 @@ class Role {
         const role = new Role(obj.name, permissions);
         role.roleId = obj.roleId;
         return role;
+    }
+
+    _checkArrayOfPermissions(permissions) {
+        if (!Array.isArray(permissions) || (permissions.length > 0 && !(permissions[0] instanceof Permission)))
+            throw new RoleError('permissions must be an array of Permission instances');
+    }
+
+    _checkName(name) {
+        if (!name)
+            throw new RoleError(`Missing the following parameters:${name ? '' : ' name'}`);
+        if (typeof name !== 'string')
+            throw new RoleError('name must be a string');
+    }
+
+    changeName(name) {
+        this._checkName(name);
+        this.name = name;
+    }
+
+    changePermissions(permissions) {
+        this._checkArrayOfPermissions(permissions);
+        this.permissions = permissions;
     }
 
     get id() {
