@@ -65,6 +65,22 @@ describe('writer unit test', function () {
         assert.deepStrictEqual(doc, toJSON(role));
     });
 
+    it('check if roleChanged works', async function () {
+        // Preset
+        await collection.insertOne(toJSON(org));
+        await collection.insertOne(toJSON(role));
+
+        // Update done
+        role.name = 'name2';
+        role.permissions = [utils.permission('auth-service', 'removeRole', 'description')];
+        const e = new Event(org.orgId, 3, 'roleChanged', { orgId: org.orgId, role: toJSON(role) });
+        await writer.roleChanged(e);
+
+        // Assertions
+        const doc = await collection.findOne({ _id: role.roleId });
+        assert.deepStrictEqual(doc, toJSON(role));
+    });
+
     it('check if roleRemoved works', async function () {
         // Preset
         await collection.insertOne(toJSON(org));

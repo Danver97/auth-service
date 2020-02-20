@@ -14,6 +14,7 @@ function organization(orgId, name, roles, users) {
             userId: defaultUserId,
             roles: [role().roleId],
         }],
+        _type: 'organization',
     };
 }
 
@@ -30,6 +31,8 @@ function role(roleId, orgId, permissions) {
         _id: roleId || defaultRoleId,
         roleId: roleId || defaultRoleId,
         orgId: orgId || defaultOrgId,
+        name: 'role1',
+        _type: 'role',
         permissions: permissions || [permission()],
     };
 }
@@ -47,11 +50,13 @@ function user(userId) {
         firstname: 'Christian',
         firstname: 'Paesante',
         email: 'chri.pae@gmail.com',
+        _type: 'user',
     };
 }
 
 module.exports = {
     organization,
     role,
+    permission,
     user,
 };

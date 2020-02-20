@@ -82,6 +82,14 @@ class Writer {
         return Promisify(() => this.collection.insertOne(role), cb);
     }
 
+    roleChanged(e, cb) {
+        const orgId = e.payload.orgId;
+        const role = e.payload.role;
+        const name = role.name;
+        const permissions = role.permissions;
+        return Promisify(() => this.collection.updateOne({ _id: role.roleId, orgId, _type: docTypes.role }, { $set: { name, permissions } }), cb);
+    }
+
     roleRemoved(e, cb) {
         const orgId = e.payload.orgId;
         const roleId = e.payload.roleId;
