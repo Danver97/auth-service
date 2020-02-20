@@ -1,4 +1,5 @@
 const dbs = require('@danver97/event-sourcing/eventStore');
+const Permission = require('../../domain/models/permission.class');
 const Role = require('../../domain/models/role.class');
 const Organization = require('../../domain/models/organization.class');
 const User = require('../../domain/models/user.class');
@@ -27,15 +28,19 @@ class RepositoryManager {
         return this.saveEvent(org.orgId, org._revisionId, orgEvents.organizationCreated, org.toJSON());
     }
 
-    roleAdded(org, role){
+    roleAdded(org, role) {
         return this.saveEvent(org.orgId, org._revisionId, orgEvents.roleAdded, { orgId: org.orgId, role });
     }
 
-    roleRemoved(org, roleId){
+    roleChanged(org, role) {
+        return this.saveEvent(org.orgId, org._revisionId, orgEvents.roleChanged, { orgId: org.orgId, role });
+    }
+
+    roleRemoved(org, roleId) {
         return this.saveEvent(org.orgId, org._revisionId, orgEvents.roleRemoved, { orgId: org.orgId, roleId });
     }
 
-    userAdded(org, userId){
+    userAdded(org, userId) {
         return this.saveEvent(org.orgId, org._revisionId, orgEvents.userAdded, { orgId: org.orgId, userId });
     }
 
@@ -47,7 +52,7 @@ class RepositoryManager {
         return this.saveEvent(org.orgId, org._revisionId, orgEvents.rolesRemovedFromUser, { orgId: org.orgId, userId, roles });
     }
 
-    userRemoved(org, userId){
+    userRemoved(org, userId) {
         return this.saveEvent(org.orgId, org._revisionId, orgEvents.userRemoved, { orgId: org.orgId, userId });
     }
 
@@ -67,6 +72,13 @@ class RepositoryManager {
                     break;
                 case orgEvents.roleAdded:
                     org.addRole(Role.fromObject(e.payload.role));
+                    break;
+                case orgEvents.roleChanged:
+                    const rolePayload = e.payload.role;
+                    const role = org.getRole(rolePayload.roleId);
+                    role.changeName(rolePayload.name);
+                    const permissions = rolePayload.permissions.map(p => Permission.fromObject(p));
+                    role.changePermissions(permissions);
                     break;
                 case orgEvents.roleRemoved:
                     org.removeRole(e.payload.roleId);

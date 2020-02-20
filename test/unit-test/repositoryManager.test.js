@@ -15,6 +15,7 @@ function toJSON(obj) {
 describe('Repository Manager unit test', function () {
     let org;
     const perm = new Permission('auth-service', 'addRole');
+    const perm2 = new Permission('auth-service', 'removeRole');
     const role = new Role('waiter', [perm]);
     const userId = 'userId1';
     const userOptions = {
@@ -55,6 +56,26 @@ describe('Repository Manager unit test', function () {
         const events = await repo.db.getStream(org.orgId);
         const lastEvent = events[events.length-1];
         assert.strictEqual(lastEvent.message, orgEvents.roleAdded);
+        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, role }));
+    });
+
+    it('check roleChanged works', async function () {
+        // Setup
+        await repo.organizationCreated(org);
+        org._revisionId = 1;
+        org.addRole(role);
+        await repo.roleAdded(org, role);
+        org._revisionId++;
+
+        // Update
+        role.changeName('name2');
+        role.changePermissions([perm2]);
+        await repo.roleChanged(org, role);
+
+        // Assertions
+        const events = await repo.db.getStream(org.orgId);
+        const lastEvent = events[events.length-1];
+        assert.strictEqual(lastEvent.message, orgEvents.roleChanged);
         assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, role }));
     });
 
@@ -185,6 +206,10 @@ describe('Repository Manager unit test', function () {
         org._revisionId = 1;
         org.addRole(role);
         await repo.roleAdded(org, role);
+        org._revisionId++;
+        role.changeName('name2');
+        role.changePermissions([perm2]);
+        await repo.roleChanged(org, role);
         org._revisionId++;
         org.addUser(userId);
         await repo.userAdded(org, userId);
