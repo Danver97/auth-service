@@ -8,6 +8,7 @@ const PermissionError = require('../../../domain/errors/permission.error');
 const OrganizationError = require('../../../domain/errors/organization.error');
 const RepositoryError = require('../../repository/repo.error');
 const QueryError = require('../../query/query.error');
+const OrganizationManagerError = require('../../../domain/errors/organizationManager.error');
 const router = express.Router();
 
 let orgMgr;
@@ -97,8 +98,45 @@ router.get('/:roleId', async (req, res) => {
 router.put('/:roleId', async (req, res) => {
     const orgId = req.orgId;
     const roleId = req.params.roleId;
+    const roleUpdated = req.body;
 
-    apiutils.serverError(res, 'Not implemented yet', 404);
+    try {
+        if (roleUpdated.permissions)
+            roleUpdated.permissions = roleUpdated.permissions.map(p => Permission.fromObject(p));
+        await orgMgr.roleChanged(orgId, roleId, roleUpdated);
+    } catch (error) {
+        if (error instanceof PermissionError) {
+            switch (error.code) {
+                case PermissionError.paramErrorCode:
+                    apiutils.clientError(res, 'Permissions are not well defined', 400);
+                    return;
+            }
+        }
+        if (error instanceof OrganizationError) {
+            switch (error.code) {
+                case OrganizationError.roleDoesNotExistErrorCode:
+                    apiutils.clientError(res, 'Role not found', 404);
+                    return;
+            }
+        }
+        if (error instanceof RepositoryError) {
+            switch (error.code) {
+                case RepositoryError.streamNotFoundErrorCode:
+                    apiutils.clientError(res, `Organization with id ${orgId} not found`, 404);
+                    return;
+            }
+        }
+        if (error instanceof OrganizationManagerError) {
+            switch (error.code) {
+                case OrganizationManagerError.noRoleChangesErrorCode:
+                    apiutils.clientError(res, 'No changes to apply to role', 400);
+                    return;
+            }
+        }
+        apiutils.serverError(res, error.msg);
+        return;
+    }
+    apiutils.emptyResponse(res);
 });
 
 router.delete('/:roleId', async (req, res) => {
