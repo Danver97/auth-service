@@ -15,8 +15,8 @@ function toJSON(obj) {
 }
 
 describe('Repository Manager unit test', function () {
-    this.slow(3000);
-    this.timeout(10000);
+    this.slow(5000);
+    this.timeout(15000);
     let org;
     const perm = new Permission('auth-service', 'addRole');
     const perm2 = new Permission('auth-service', 'removeRole');

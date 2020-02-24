@@ -12,8 +12,8 @@ const OrganizationManagerError = require('../../domain/errors/organizationManage
 let orgMgr = new OrganizationManager(repo);
 
 describe('Organization Manager unit test', function () {
-    this.slow(3000);
-    this.timeout(10000);
+    this.slow(5000);
+    this.timeout(15000);
     let org;
     let orgId;
     const orgName = 'Risto';

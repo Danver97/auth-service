@@ -10,8 +10,8 @@ const RepositoryError = require('../../infrastructure/repository/repo.error');
 const userMgr = new UserManager(repo);
 
 describe('UserManager unit test', function () {
-    this.slow(3000);
-    this.timeout(10000);
+    this.slow(5000);
+    this.timeout(15000);
     const userInfo = {
         accountId: 14546434341331,
         accountType: 'Google',
