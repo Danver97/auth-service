@@ -34,13 +34,6 @@ function addParam(paramName) {
     };
 }
 
-function verifyGoogleIdToken(client, idToken, audience) {
-    return client.verifyIdToken({
-        idToken,
-        audience,
-    });
-}
-
 module.exports = {
     emptyResponse,
     clientError,
