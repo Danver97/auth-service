@@ -8,7 +8,9 @@
   },
   "scripts": {
     "start": "node index",
-    "test": "mocha --exit"
+    "test": "mocha --exit",
+    "unit-test": "mocha --exit ./test/unit-test",
+    "integration-test": "mocha --exit ./test/integration-test"
   },
   "author": "Christian Paesante",
   "license": "ISC",
