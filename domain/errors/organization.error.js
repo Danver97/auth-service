@@ -9,8 +9,16 @@ const errorsTypes = {
         code: 10,
         name: 'roleAlreadyExistsError',
     },
-    roleDoesNotExistError: {
+    assignedRoleDoesNotExistsError: {
         code: 11,
+        name: 'assignedRoleDoesNotExistsError',
+    },
+    removedRoleDoesNotExistsError: {
+        code: 12,
+        name: 'removedRoleDoesNotExistsError',
+    },
+    roleDoesNotExistError: {
+        code: 13,
         name: 'roleDoesNotExistError',
     },
     userAlreadyExistsError: {
@@ -41,6 +49,14 @@ class OrganizationError extends ExtendableError {
         return new OrganizationError(msg, OrganizationError.roleAlreadyExistsErrorCode);
     }
 
+    static assignedRoleDoesNotExistsError(msg) {
+        return new OrganizationError(msg, OrganizationError.assignedRoleDoesNotExistsErrorCode);
+    }
+
+    static removedRoleDoesNotExistsError(msg) {
+        return new OrganizationError(msg, OrganizationError.removedRoleDoesNotExistsErrorCode);
+    }
+
     static roleDoesNotExistError(msg) {
         return new OrganizationError(msg, OrganizationError.roleDoesNotExistErrorCode);
     }
@@ -63,6 +79,14 @@ class OrganizationError extends ExtendableError {
     
     static get roleAlreadyExistsErrorCode() {
         return errorsTypes.roleAlreadyExistsError.code;
+    }
+    
+    static get assignedRoleDoesNotExistsErrorCode() {
+        return errorsTypes.assignedRoleDoesNotExistsError.code;
+    }
+    
+    static get removedRoleDoesNotExistsErrorCode() {
+        return errorsTypes.removedRoleDoesNotExistsError.code;
     }
 
     static get roleDoesNotExistErrorCode() {

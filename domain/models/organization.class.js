@@ -137,7 +137,7 @@ class Organization {
             throw OrganizationError.paramError('roles must be a non empty array of role ids');
         roles.forEach(r => {
             if (!this._roles[r])
-                throw OrganizationError.roleDoesNotExistError(`role ${r} does not exist in the organization`);
+                throw OrganizationError.assignedRoleDoesNotExistsError(`role ${r} does not exist in the organization`);
             this._users[userId].add(r);
         });
     }
@@ -159,7 +159,7 @@ class Organization {
             throw OrganizationError.paramError('roles must be a non empty array of role ids');
         roles.forEach(r => {
             if (!this._roles[r])
-                throw OrganizationError.roleDoesNotExistError(`role ${r} does not exist in the organization`);
+                throw OrganizationError.removedRoleDoesNotExistsError(`role ${r} does not exist in the organization`);
             this._users[userId].delete(r);
         });
     }
