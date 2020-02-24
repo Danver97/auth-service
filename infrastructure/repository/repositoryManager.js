@@ -129,10 +129,10 @@ class RepositoryManager {
 function exportFunc(db) {
     let repo;
     if (!db)
-        repo = new RepositoryManager(dbs[ENV.event_store]);
+        repo = new RepositoryManager(dbs[ENV.EVENT_STORE]);
     else
         repo = new RepositoryManager(dbs[db]);
-    console.log(`Repo started with: ${db || ENV.event_store}`);
+    console.log(`Repo started with: ${db || ENV.EVENT_STORE}`);
     return repo;
 }
 
