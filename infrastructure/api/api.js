@@ -49,8 +49,7 @@ app.post('/login', async (req, res) => {
     try {
         ticket = await auth2.verifyGoogleIdToken(id_token);
     } catch (err) {
-        console.log(err);
-        apiutils.clientError(res, 'token not valid', 401);
+        next(err);
         return;
     }
     const payload = ticket.getPayload();

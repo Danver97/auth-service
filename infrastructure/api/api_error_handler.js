@@ -6,22 +6,9 @@ const RepositoryError = require('../repository/repo.error');
 const RoleError = require('../../domain/errors/role.error');
 const PermissionError = require('../../domain/errors/permission.error');
 const OrganizationManagerError = require('../../domain/errors/organizationManager.error');
+const ValidatorError = require('../../lib/tokenValidator').ValidatorError;
 
-function errorHandler(err, req, res, next) {    
-    if (err instanceof QueryError) {
-        switch (err.code) {
-            case QueryError.roleNotFoundErrorCode:
-                apiutils.clientError(res, 'Role not found', 404);
-                return;
-            case QueryError.organizationNotFoundErrorCode:
-                apiutils.clientError(res, 'Organization not found', 404);
-                return;
-            case QueryError.userNotFoundErrorCode:
-                apiutils.clientError(res, 'User not found', 404);
-                return;
-        }
-    }
-
+function errorHandler(err, req, res, next) {
     if (err instanceof PermissionError) {
         switch (err.code) {
             case PermissionError.paramErrorCode:
@@ -68,6 +55,32 @@ function errorHandler(err, req, res, next) {
                 return;
         }
     }
+
+    if (err instanceof QueryError) {
+        switch (err.code) {
+            case QueryError.roleNotFoundErrorCode:
+                apiutils.clientError(res, 'Role not found', 404);
+                return;
+            case QueryError.organizationNotFoundErrorCode:
+                apiutils.clientError(res, 'Organization not found', 404);
+                return;
+            case QueryError.userNotFoundErrorCode:
+                apiutils.clientError(res, 'User not found', 404);
+                return;
+        }
+    }
+
+    if (err instanceof ValidatorError) {
+        switch (err.code) {
+            case ValidatorError.paramErrorCode:
+                apiutils.clientError(res, 'Missing id_token paramter from body', 400);
+                return;
+            case ValidatorError.invalidTokenErrorCode:
+                apiutils.clientError(res, 'The provided token is invalid', 401);
+                return;
+        }
+    }
+    
     apiutils.serverError(res, err.message);
     return;
 }
