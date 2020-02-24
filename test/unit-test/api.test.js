@@ -394,7 +394,13 @@ describe('Api unit test', function () {
     });
 
     it.skip(`POST\t/login`, async function () {
-
+        await req.post(`/login`)
+            .set('Content-Type', 'application/json')
+            .send({ id_token: 'blabla' })
+            .expect(res => {
+                console.log(res.body);
+            })
+            .expect(400);
     });
 
 });

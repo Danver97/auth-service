@@ -18,27 +18,20 @@ const checkParam = apiutils.checkParam;
 
 // Base path /organizations/:orgId/roles
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     const orgId = req.orgId;
 
     let roles;
     try {
         roles = await queryMgr.getOrganizationRoles(orgId);
     } catch (error) {
-        if (error instanceof QueryError) {
-            switch (error.code) {
-                case QueryError.notFoundCode:
-                    apiutils.clientError(res, 'Organization not found', 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     res.json(roles.map(r => presentation.roleJSON(r)));
 });
 
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
     const orgId = req.orgId;
     if (!req.body.name || typeof req.body.name !== 'string') {
         apiutils.clientError(res, 'name property in body must be a string');
@@ -55,18 +48,7 @@ router.post('/', async (req, res) => {
         role = new Role(req.body.name, permissions);
         await orgMgr.roleAdded(orgId, role);
     } catch (error) {
-        if (error instanceof PermissionError || error instanceof RoleError) {
-            apiutils.clientError(res, error.msg);
-            return;
-        }
-        if (error instanceof RepositoryError) {
-            switch (error.code) {
-                case RepositoryError.streamNotFoundErrorCode:
-                    apiutils.clientError(res, `Organization with id ${orgId} not found`, 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     return res.json(presentation.roleJSON(role, orgId));
@@ -74,7 +56,7 @@ router.post('/', async (req, res) => {
 
 router.use('/:roleId', checkParam('roleId'));
 
-router.get('/:roleId', async (req, res) => {
+router.get('/:roleId', async (req, res, next) => {
     const orgId = req.orgId;
     const roleId = req.params.roleId;
 
@@ -82,20 +64,13 @@ router.get('/:roleId', async (req, res) => {
     try {
         role = await queryMgr.getRole(orgId, roleId);
     } catch (error) {
-        if (error instanceof QueryError) {
-            switch (error.code) {
-                case QueryError.notFoundCode:
-                    apiutils.clientError(res, 'Role not found', 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     res.json(presentation.roleJSON(role));
 });
 
-router.put('/:roleId', async (req, res) => {
+router.put('/:roleId', async (req, res, next) => {
     const orgId = req.orgId;
     const roleId = req.params.roleId;
     const roleUpdated = req.body;
@@ -105,62 +80,20 @@ router.put('/:roleId', async (req, res) => {
             roleUpdated.permissions = roleUpdated.permissions.map(p => Permission.fromObject(p));
         await orgMgr.roleChanged(orgId, roleId, roleUpdated);
     } catch (error) {
-        if (error instanceof PermissionError) {
-            switch (error.code) {
-                case PermissionError.paramErrorCode:
-                    apiutils.clientError(res, 'Permissions are not well defined', 400);
-                    return;
-            }
-        }
-        if (error instanceof OrganizationError) {
-            switch (error.code) {
-                case OrganizationError.roleDoesNotExistErrorCode:
-                    apiutils.clientError(res, 'Role not found', 404);
-                    return;
-            }
-        }
-        if (error instanceof RepositoryError) {
-            switch (error.code) {
-                case RepositoryError.streamNotFoundErrorCode:
-                    apiutils.clientError(res, `Organization with id ${orgId} not found`, 404);
-                    return;
-            }
-        }
-        if (error instanceof OrganizationManagerError) {
-            switch (error.code) {
-                case OrganizationManagerError.noRoleChangesErrorCode:
-                    apiutils.clientError(res, 'No changes to apply to role', 400);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     apiutils.emptyResponse(res);
 });
 
-router.delete('/:roleId', async (req, res) => {
+router.delete('/:roleId', async (req, res, next) => {
     const orgId = req.orgId;
     const roleId = req.params.roleId;
 
     try {
         await orgMgr.roleRemoved(orgId, roleId);
     } catch (error) {
-        if (error instanceof RepositoryError) {
-            switch (error.code) {
-                case RepositoryError.streamNotFoundErrorCode:
-                    apiutils.clientError(res, 'Organization not found', 404);
-                    return;
-            }
-        }
-        if (error instanceof OrganizationError) {
-            switch (error.code) {
-                case OrganizationError.roleDoesNotExistErrorCode:
-                    apiutils.clientError(res, 'Role not found', 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     apiutils.emptyResponse(res);

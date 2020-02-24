@@ -11,27 +11,20 @@ let queryMgr;
 
 const checkParam = apiutils.checkParam;
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     const orgId = req.orgId;
 
     let users;
     try {
         users = await queryMgr.getOrganizationUsers(orgId);
     } catch (error) {
-        if (error instanceof QueryError) {
-            switch (error.code) {
-                case QueryError.notFoundCode:
-                    apiutils.clientError(res, 'Organization not found', 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     res.json(users.map(u => presentation.userJSON(u)));
 });
 
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
     const orgId = req.orgId;
     const userId = req.body.userId;
     if (!userId || typeof userId !== 'string') {
@@ -42,21 +35,7 @@ router.post('/', async (req, res) => {
     try {
         await orgMgr.userAdded(orgId, userId);
     } catch (error) {
-        if (error instanceof RepositoryError) {
-            switch (error.code) {
-                case RepositoryError.streamNotFoundErrorCode:
-                    apiutils.clientError(res, 'Organization not found', 404);
-                    return;
-            }
-        }
-        if (error instanceof OrganizationError) {
-            switch (error.code) {
-                case OrganizationError.userAlreadyExistsErrorCode:
-                    apiutils.clientError(res, 'User already present in the organization', 400);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     apiutils.emptyResponse(res);
@@ -64,34 +43,20 @@ router.post('/', async (req, res) => {
 
 router.use('/:userId', checkParam('userId'));
 
-router.delete('/:userId', async (req, res) => {
+router.delete('/:userId', async (req, res, next) => {
     const orgId = req.orgId;
     const userId = req.params.userId;
 
     try {
         await orgMgr.userRemoved(orgId, userId);
     } catch (error) {
-        if (error instanceof RepositoryError) {
-            switch (error.code) {
-                case RepositoryError.streamNotFoundErrorCode:
-                    apiutils.clientError(res, 'Organization not found', 404);
-                    return;
-            }
-        }
-        if (error instanceof OrganizationError) {
-            switch (error.code) {
-                case OrganizationError.userDoesNotExistErrorCode:
-                    apiutils.clientError(res, 'User does not exist in the organization', 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     apiutils.emptyResponse(res);
 });
 
-router.get('/:userId/roles', async (req, res) => {
+router.get('/:userId/roles', async (req, res, next) => {
     const orgId = req.orgId;
     const userId = req.params.userId;
 
@@ -99,20 +64,13 @@ router.get('/:userId/roles', async (req, res) => {
     try {
         roles = await queryMgr.getOrganizationUserRoles(orgId, userId);
     } catch (error) {
-        if (error instanceof QueryError) {
-            switch (error.code) {
-                case QueryError.notFoundCode:
-                    apiutils.clientError(res, 'User not found', 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     res.json(roles.map(r => presentation.roleJSON(r)));
 });
 
-router.post('/:userId/roles', async (req, res) => {
+router.post('/:userId/roles', async (req, res, next) => {
     const orgId = req.orgId;
     const userId = req.params.userId;
     const rolesIds = req.body.rolesIds;
@@ -124,30 +82,13 @@ router.post('/:userId/roles', async (req, res) => {
     try {
         await orgMgr.rolesAssignedToUser(orgId, userId, rolesIds);
     } catch (error) {
-        if (error instanceof RepositoryError) {
-            switch (error.code) {
-                case RepositoryError.streamNotFoundErrorCode:
-                    apiutils.clientError(res, 'Organization not found', 404);
-                    return;
-            }
-        }
-        if (error instanceof OrganizationError) {
-            switch (error.code) {
-                case OrganizationError.userDoesNotExistErrorCode:
-                    apiutils.clientError(res, 'User does not exist in the organization', 404);
-                    return;
-                case OrganizationError.roleDoesNotExistErrorCode:
-                    apiutils.clientError(res, 'One of the roles specified does not exist in the organization', 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     apiutils.emptyResponse(res);
 });
 
-router.delete('/:userId/roles/:roleId', checkParam('roleId'), async (req, res) => {
+router.delete('/:userId/roles/:roleId', checkParam('roleId'), async (req, res, next) => {
     const orgId = req.orgId;
     const userId = req.params.userId;
     const roleId = req.params.roleId;
@@ -155,24 +96,7 @@ router.delete('/:userId/roles/:roleId', checkParam('roleId'), async (req, res) =
     try {
         await orgMgr.rolesRemovedFromUser(orgId, userId, [roleId]);
     } catch (error) {
-        if (error instanceof RepositoryError) {
-            switch (error.code) {
-                case RepositoryError.streamNotFoundErrorCode:
-                    apiutils.clientError(res, 'Organization not found', 404);
-                    return;
-            }
-        }
-        if (error instanceof OrganizationError) {
-            switch (error.code) {
-                case OrganizationError.userDoesNotExistErrorCode:
-                    apiutils.clientError(res, 'User does not exist in the organization', 404);
-                    return;
-                case OrganizationError.roleDoesNotExistErrorCode:
-                    apiutils.clientError(res, 'One of the roles specified does not exist in the organization', 404);
-                    return;
-            }
-        }
-        apiutils.serverError(res, error.msg);
+        next(error);
         return;
     }
     apiutils.emptyResponse(res);
