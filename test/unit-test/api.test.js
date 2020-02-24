@@ -166,10 +166,10 @@ describe('Api unit test', function () {
                     orgId: orgId1,
                     name: orgName1,
                     _type: 'organization',
-                    // This is due to the fact that there's no way to specify to include this fields in the query
+                    /* // This is due to the fact that there's no way to specify to include this fields in the query
                     // This fields are not projected because they will be 2 ever-growing lists
                     roles: [],
-                    users: [],
+                    users: [], */
                 };
                 const expectedLinks = {
                     self: `/organizations/${orgId1}`,
