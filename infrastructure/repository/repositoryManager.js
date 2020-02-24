@@ -63,7 +63,7 @@ class RepositoryManager {
     async getOrganization(orgId) {
         const events = await this.db.getStream(orgId);
         if (!events || events.length === 0)
-            throw RepositoryError.streamNotFound(`Organization with id ${orgId} not found`);
+            throw RepositoryError.organizationStreamNotFoundError(`Organization with id ${orgId} not found`);
         let org;
         events.forEach(e => {
             switch (e.message) {
@@ -111,7 +111,7 @@ class RepositoryManager {
     async getUser(userId) {
         const events = await this.db.getStream(userId);
         if (!events || events.length === 0)
-            throw RepositoryError.streamNotFound(`User with id ${userId} not found`);
+            throw RepositoryError.userStreamNotFoundError(`User with id ${userId} not found`);
         let user;
         events.forEach(e => {
             switch (e.message) {
