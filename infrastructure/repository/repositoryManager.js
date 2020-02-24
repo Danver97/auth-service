@@ -105,7 +105,7 @@ class RepositoryManager {
     }
 
     userCreated(user) {
-        return this.saveEvent(user.uniqueId, user._revisionId, userEvents.userCreated, user);
+        return this.saveEvent(user.uniqueId, user._revisionId, userEvents.userCreated, user.toJSON());
     }
 
     async getUser(userId) {
