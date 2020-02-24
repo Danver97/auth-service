@@ -164,7 +164,17 @@ describe('Organization class unit test', function () {
     it('check fromObject works', function () {
         assert.throws(() => Organization.fromObject(), OrganizationError);
 
-        const obj = {
+        const obj1 = {
+            orgId,
+            name,
+        }
+        const org1 = Organization.fromObject(obj1);
+        assert.strictEqual(org1.orgId, orgId);
+        assert.strictEqual(org1.name, name);
+        assert.deepStrictEqual(org1.roles, []);
+        assert.deepStrictEqual(org1.users, []);
+
+        const obj2 = {
             orgId,
             name,
             roles: [JSON.parse(JSON.stringify(role))],
@@ -173,23 +183,33 @@ describe('Organization class unit test', function () {
                 roles: [role.roleId]
             }],
         }
-        const org = Organization.fromObject(obj);
-        assert.strictEqual(org.orgId, orgId);
-        assert.strictEqual(org.name, name);
-        assert.deepStrictEqual(org.roles, [role]);
+        const org2 = Organization.fromObject(obj2);
+        assert.strictEqual(org2.orgId, orgId);
+        assert.strictEqual(org2.name, name);
+        assert.deepStrictEqual(org2.roles, [role]);
         const userExpected = {
             userId,
             roles: [role.roleId],
         };
-        assert.deepStrictEqual(org.users, [userExpected]);
+        assert.deepStrictEqual(org2.users, [userExpected]);
     });
 
     it('check toJSON works', function () {
-        const org = new Organization(name);
+        let org = new Organization(name);
+        let json = org.toJSON();
+        let expected = {
+            name
+        };
+        assert.strictEqual(typeof json.orgId, 'string')
+        assert.notStrictEqual(json.orgId.length, 0);
+        delete json.orgId;
+        assert.deepStrictEqual(json, expected);
+
+        org = new Organization(name);
         org.addRole(role);
         org.addUser(userId, [role.roleId]);
 
-        const expected = {
+        expected = {
             name,
             roles: [role],
             users: [{
@@ -197,7 +217,9 @@ describe('Organization class unit test', function () {
                 roles: [role.roleId]
             }],
         };
-        const json = org.toJSON();
+        json = org.toJSON();
+        assert.strictEqual(typeof json.orgId, 'string')
+        assert.notStrictEqual(json.orgId.length, 0);
         delete json.orgId
         assert.deepStrictEqual(json, expected);
     });

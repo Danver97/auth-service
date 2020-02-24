@@ -38,13 +38,15 @@ class Organization {
             throw OrganizationError.paramError('Missing the following paramter: obj');
         const org = new Organization(obj.name);
         org.orgId = obj.orgId;
-        obj.roles.forEach(r => {
-            const role = Role.fromObject(r);
-            org.addRole(role);
-        });
-        obj.users.forEach(u => {
-            org.addUser(u.userId, u.roles);
-        });
+        if (obj.roles)
+            obj.roles.forEach(r => {
+                const role = Role.fromObject(r);
+                org.addRole(role);
+            });
+        if (obj.users)
+            obj.users.forEach(u => {
+                org.addUser(u.userId, u.roles);
+            });
         return org;
     }
 
@@ -191,12 +193,15 @@ class Organization {
     }
 
     toJSON() {
-        return {
+        const json = {
             orgId: this.orgId,
             name: this.name,
-            roles: this.roles,
-            users: this.users,
         };
+        if (this.roles.length > 0)
+            json.roles = this.roles;
+        if (this.users.length > 0)
+            json.users = this.users;
+        return json;
     }
 }
 
