@@ -1,43 +1,16 @@
 const AWS = require('aws-sdk/global');
 const SNS = require('aws-sdk/clients/sns');
 
+/* if (process.env.AWS_DEFAULT_REGION)
+    AWS.config = new AWS.Config({ region: process.env.AWS_DEFAULT_REGION }); */
+
 const snsParams = { apiVersion: '2010-03-31' };
-if (process.env.SNS_URL)
+if (process.env.LOCALSTACK_HOSTNAME)
+    snsParams.endpoint = new AWS.Endpoint(`http://${process.env.LOCALSTACK_HOSTNAME}:4569`);
+else if (process.env.SNS_URL)
     snsParams.endpoint = new AWS.Endpoint(process.env.SNS_URL);
 const sns = new SNS(snsParams);
 
-/*
-{
-    "Records": [
-        {
-            "eventID": "1",
-            "eventVersion": "1.0",
-            "dynamodb": {
-                "Keys": {
-                    "Id": {
-                        "N": "101"
-                    }
-                },
-                "NewImage": {
-                    "Message": {
-                        "S": "New item!"
-                    },
-                    "Id": {
-                        "N": "101"
-                    }
-                },
-                "StreamViewType": "NEW_AND_OLD_IMAGES",
-                "SequenceNumber": "111",
-                "SizeBytes": 26
-            },
-            "awsRegion": "us-west-2",
-            "eventName": "INSERT",
-            "eventSourceARN": eventsourcearn,
-            "eventSource": "aws:dynamodb"
-        },
-    ]
-}
-*/
 
 /* Test event */
 /*
