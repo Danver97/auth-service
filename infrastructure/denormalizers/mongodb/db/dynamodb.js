@@ -15,7 +15,7 @@ function unwrap(data) {
 }
 
 class DynamoOrderControlDb {
-    constructor(tableName, endpoint) {
+    constructor({ tableName, endpoint }) {
         if (!tableName) {
             throw new Error(
                 `OrderControlError: missing the following parameters in the export function ${tableName ? '' : 'tableName'}`
