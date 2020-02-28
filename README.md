@@ -1,0 +1,42 @@
+## Environment variables
+
+Used by scripts
+- `MICROSERVICE_NAME`
+- `AWS_ACCOUNT_ID`
+- `AWS_DEFAULT_REGION`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `CLOUD`
+- `LOG_LEVEL`
+- `DEPLOY_ENVIRONMENT` (`dev`, `test`, `production`)
+
+Used by tests
+- `MICROSERVICE_NAME`
+- `TEST` (2 values `unit` or `integration`)
+- `MONGODB_URL`
+- `MONGODB_DBNAME`
+- `MONGODB_COLLECTION`
+
+Used by microservice
+- `MICROSERVICE_NAME`
+- `AWS_DEFAULT_REGION`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `EVENT_STORE`
+- `EVENT_BROKER`
+- `MONGODB_URL`
+- `MONGODB_DBNAME`
+- `MONGODB_COLLECTION`
+
+Used by denormalizer
+- `ORDER_CONTROL_DB`
+- `ORDER_CONTROL_TABLE`
+- `ORDER_CONTROL_DB_URL`
+- `MONGODB_URL`
+- `MONGODB_DBNAME`
+- `MONGODB_COLLECTION`
+
+
+To add in libraries:
+- `EVENT_STREAM_TABLE`
+- `EVENT_BROKER_QUEUE`

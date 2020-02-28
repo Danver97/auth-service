@@ -414,8 +414,9 @@ class StackUtils {
             params.StartingPosition = 'LATEST';
             params.BatchSize = 1000;
         }
+        let response2;
         try {
-            const response2 = await this.lambda.createEventSourceMapping(params).promise();
+            response2 = await this.lambda.createEventSourceMapping(params).promise();
             this.log('EventSourceMapping created');
         } catch (err) {
             if (err.code === 'ResourceConflictException') {
@@ -425,13 +426,12 @@ class StackUtils {
             } else
                 throw err;
         }
-        const response2 = await this.lambda.createEventSourceMapping(params).promise();
-        this.log('EventSourceMapping created');
         return response2.UUID;
     }
 
     async deleteEventSourceMapping(UUID) {
         await this.lambda.deleteEventSourceMapping({ UUID });
+        this.log(`Event Source Mapping ${UUID} deleted`);
     }
 
     async deleteLambda(FunctionName) {
@@ -800,6 +800,7 @@ class StackUtils {
     /**
      * 
      * @param {Object} options 
+     * @param {string} options.TopicName Topic to which subscribe the queue
      * @param {string} options.QueueName Denormalizer queue
      * @param {string} options.OrderControlTableName Denormalizer order control table name
      * @param {boolean} options.deployLambda Flag to say if the lambda should be deployed and linked to the queue
@@ -813,9 +814,11 @@ class StackUtils {
      * @param {string} options.deploymentPackageOptions.folder Path to package to deploy
      */
     async createDenormalizerStack(options = {}) {
+        const TopicName = options.TopicName || 'TestTopic';
         const QueueName = options.QueueName || 'TestQueue';
         const OrderControlTableName = options.OrderControlTableName || 'TestOrderControlTable';
         await this.createQueue(QueueName);
+        await this.subscribeQueueToTopic({ TopicName, QueueName });
         await this.buildOrderControlTable(OrderControlTableName);
         let EventSourceMappingUUID
         if (options.deployLambda) {
@@ -891,14 +894,10 @@ class StackUtils {
 
         // Create DDB Streams to SNS lambda function
         const { Handler, path: packagePath = {} } = DDB2SNSLambdaOptions;
-        /* const defaultEnvVars = {
+        const defaultEnvVars = {
             TOPIC_ARN: TopicArn,
-            AWS_ACCESS_KEY_ID: this.credentials.accessKeyId,
-            AWS_SECRET_ACCESS_KEY: this.credentials.secretAccessKey,
-            AWS_DEFAULT_REGION: this.region,
         }
-        const envVars = Object.assign(defaultEnvVars, DDB2SNSLambdaOptions.envVars); */
-        const { envVars = {} } = DDB2SNSLambdaOptions;
+        const envVars = Object.assign(defaultEnvVars, DDB2SNSLambdaOptions.envVars);
         let ZipFile;
         if (packagePath.zip)
             ZipFile = zip;
@@ -907,7 +906,8 @@ class StackUtils {
         await this.createLambda({ FunctionName, ZipFile, Handler, RoleArn, envVars });
 
         // Create EventMapping between DDB Streams and the previous lambda function
-        await this.createEventSourceMapping({ TableName, FunctionName });
+        const ESM_UUID = await this.createEventSourceMapping({ TableName, FunctionName });
+        console.log('EventSourceMapping UUID:', ESM_UUID);
     }
 
     /**
@@ -935,6 +935,7 @@ class StackUtils {
         const QueueUrl = await this.getQueueUrl(QueueName);
         if (QueueUrl)
             await this.deleteQueue({ QueueUrl });
+        await this.deleteEventSourceMapping(options.EventSourceMappingUUID);
 
     }
 }

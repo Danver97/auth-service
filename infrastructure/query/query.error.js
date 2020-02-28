@@ -21,6 +21,10 @@ const errorsTypes = {
         code: 4,
         name: 'userNotFoundError',
     },
+    userNotBelongingToOrganizationError: {
+        code: 5,
+        name: 'userNotBelongingToOrganizationError',
+    }
 };
 
 class QueryError extends ExtendableError {
@@ -49,6 +53,10 @@ class QueryError extends ExtendableError {
         return new QueryError(msg, QueryError.userNotFoundErrorCode);
     }
 
+    static userNotBelongingToOrganizationError(msg) {
+        return new QueryError(msg, QueryError.userNotBelongingToOrganizationErrorCode);
+    }
+
     // Codes
 
     static get paramErrorCode() {
@@ -69,6 +77,10 @@ class QueryError extends ExtendableError {
 
     static get userNotFoundErrorCode() {
         return errorsTypes.userNotFoundError.code;
+    }
+
+    static get userNotBelongingToOrganizationErrorCode() {
+        return errorsTypes.userNotBelongingToOrganizationError.code;
     }
 }
 

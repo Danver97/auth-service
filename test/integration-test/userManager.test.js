@@ -4,9 +4,11 @@ const ENV = require('../../lib/env');
 const User = require('../../domain/models/user.class');
 const userEvents = require('../../lib/user-events');
 const UserManager = require('../../domain/logic/userManager');
-const repo = require('../../infrastructure/repository/repositoryManager')('dynamodb');
+const repoFunc = require('../../infrastructure/repository/repositoryManager');
 const RepositoryError = require('../../infrastructure/repository/repo.error');
 
+const eventStoreType = (!process.env.TEST || process.env.TEST === 'unit') ? 'testdb' : 'dynamodb';
+const repo = repoFunc(eventStoreType);
 const userMgr = new UserManager(repo);
 
 describe('UserManager unit test', function () {

@@ -15,7 +15,7 @@ const credentials = {
 const su = new StackUtils({ accountID, region, environment, cloud, credentials });
 
 const InstanceId = argv[4] || process.env.INSTANCE_ID;
-const EventSourceMappingUUID = argv[5] || process.env.ESM_UUID;
+const EventSourceMappingUUID = argv[5] || process.env.ESM_UUID_DENORM;
 
 async function deleteDenormalizerStack(InstanceId, EventSourceMappingUUID) {
     if (!InstanceId)

@@ -3,12 +3,15 @@ const DynamoDB = require('aws-sdk/clients/dynamodb');
 const ENV = require('../../lib/env');
 const orgEvents = require('../../lib/organization-events');
 const userEvents = require('../../lib/user-events');
-const repo = require('../../infrastructure/repository/repositoryManager')('dynamodb');
+const repoFunc = require('../../infrastructure/repository/repositoryManager');
 const User = require('../../domain/models/user.class');
 const Organization = require('../../domain/models/organization.class');
 const Permission = require('../../domain/models/permission.class');
 const Role = require('../../domain/models/role.class');
 const RepositoryError = require('../../infrastructure/repository/repo.error');
+
+const eventStoreType = (!process.env.TEST || process.env.TEST === 'unit') ? 'testdb' : 'dynamodb';
+const repo = repoFunc(eventStoreType);
 
 function toJSON(obj) {
     return JSON.parse(JSON.stringify(obj));

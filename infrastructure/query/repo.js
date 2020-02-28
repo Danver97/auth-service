@@ -158,6 +158,8 @@ class QueryManager {
         const user = await this.mongoCollection.findOne({ uniqueId: userId, organizations: orgId, _type: 'user' });
         if (!user)
             throw QueryError.userNotFoundError(`user with ${userId} belonging to organization with id ${orgId} not found`);
+        if (!user.roles || !user.roles[orgId])
+            throw QueryError.userNotBelongingToOrganizationError(`user with ${userId} not belonging to organization with id ${orgId}`);
         const roleIds = user.roles[orgId];
         if (options.idOnly)
             return roleIds;

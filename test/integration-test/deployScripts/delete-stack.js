@@ -12,5 +12,13 @@ const credentials = {
     secretAccessKey: argv[3] || process.env.AWS_SECRET_ACCESS_KEY || 'xyz',
 };
 
+const microserviceName = process.env.MICROSERVICE_NAME || '';
+const EventSourceMappingUUID = argv[4] || process.env.ESM_UUID_DDBS2SNS;
+
 const su = new StackUtils({ accountID, region, environment, cloud, credentials });
-su.deleteEventSourcingStack({ TableName: 'authEventStreamTable', DDB2SNSLambdaOptions: { FunctionName: 'DDBS2SNS' } });
+su.deleteEventSourcingStack({
+    TableName: `${microserviceName}EventStreamTable`,
+    QueueName: `${microserviceName}Queue`,
+    TopicName: `${microserviceName}Topic`,
+    EventSourceMappingUUID,
+    DDB2SNSLambdaOptions: { FunctionName: `${microserviceName}DDBS2SNS` } });

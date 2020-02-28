@@ -67,6 +67,9 @@ function errorHandler(err, req, res, next) {
             case QueryError.userNotFoundErrorCode:
                 apiutils.clientError(res, 'User not found', 404);
                 return;
+            case QueryError.userNotBelongingToOrganizationErrorCode:
+                apiutils.clientError(res, 'User not belonging to organization', 404);
+                return;
         }
     }
 

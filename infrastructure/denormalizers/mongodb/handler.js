@@ -76,7 +76,8 @@ class EventHandler {
             let lastEventId = (await this.orderCtrl.getLastProcessedEvent(e.streamId)).eventId;
             lastEventId = (lastEventId === undefined || lastEventId === null) ? 0 : lastEventId;
     
-            this.log('log', `Last EventId: ${lastEventId}
+            this.log('log', `StreamId: ${e.streamId}
+            Last EventId: ${lastEventId}
             Expected EventId: ${lastEventId + 1}
             Current EventId: ${e.eventId}`);
             // If it is and old event
@@ -92,7 +93,7 @@ class EventHandler {
                 // Ignore it
                 this.log('warn', `Current EId is bigger that expected EId
                 Current event is a future event. Will be ignored without removing it from queue.`);
-                this.log('log', 'Expected eventId:', lastEventId + 1, 'Found:', e.eventId);
+                this.log('log', `Expected eventId: ${lastEventId + 1}. Found: ${e.eventId}`);
                 await dontAcknoledge(ack);
                 return;
             }

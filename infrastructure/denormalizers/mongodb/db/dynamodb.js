@@ -1,6 +1,9 @@
-const Endpoint = require('aws-sdk/global').Endpoint;
+const AWS = require('aws-sdk/global');
 const DDB = require('aws-sdk/clients/dynamodb');
 const ddbDataTypes = require('dynamodb-data-types').AttributeValue;
+const Endpoint = AWS.Endpoint;
+
+AWS.config = new AWS.Config({ region: process.env.AWS_DEFAULT_REGION });
 
 // const dynamodb = new DDB({apiVersion: '2012-08-10'});
 
@@ -15,7 +18,7 @@ function unwrap(data) {
 }
 
 class DynamoOrderControlDb {
-    constructor({ tableName, endpoint }) {
+    constructor(tableName, endpoint) {
         if (!tableName) {
             throw new Error(
                 `OrderControlError: missing the following parameters in the export function ${tableName ? '' : 'tableName'}`
@@ -38,7 +41,7 @@ class DynamoOrderControlDb {
         };
         const response = await this.dynamodb.getItem(params).promise();
         const item = unwrap(response.Item);
-        return { streamId: item.StreamId, eventId: item.LastProcessedEventId };
+        return { streamId: item.StreamId || streamId, eventId: item.LastProcessedEventId || 0 };
     }
 
     async getMultiple(streamIds) {
@@ -52,19 +55,27 @@ class DynamoOrderControlDb {
             },
         };
         const response = await this.dynamodb.batchGetItem(params).promise();
-        const items = response.Responses[this.tableName]
+        let itemSet = {};
+        response.Responses[this.tableName]
             .map(elem => unwrap(elem))
-            .map(item => ({streamId: item.StreamId, eventId: item.LastProcessedEventId}));
+            .map(item => ({ streamId: item.StreamId, eventId: item.LastProcessedEventId }))
+            .forEach(e => { itemSet[e.streamId] = e; });
+        const items = streamIds.map(sId => {
+            if (itemSet[sId])
+                return itemSet[sId];
+            return { streamId: sId, eventId: 0 };
+        });
         return items;
     }
 
     updateOne(streamId, lastEventId, newEventId) {
         let conditionalExp;
+        newEventId = newEventId || lastEventId + 1;
         const exprAttrs = {
             ":lpei": wrap1(lastEventId),
-            ":npei": wrap1(newEventId || lastEventId + 1),
+            ":npei": wrap1(newEventId),
         }
-        if (lastEventId === 0 && newEventId === 1) {
+        if (lastEventId === 0) {
             exprAttrs[':zero'] = wrap1(0);
             delete exprAttrs[':lpei'];
             conditionalExp = 'attribute_not_exists(#LPEI) OR #LPEI = :zero';
@@ -89,11 +100,11 @@ class DynamoOrderControlDb {
 
     updateMultiple(updates) {
         if (Array.isArray(updates)) {
-            const promises = updates.map(e => updateLastProcessedEvent(e.streamId, e.last, e.new));
+            const promises = updates.map(e => this.updateOne(e.streamId, e.last, e.new));
             return Promise.all(promises);
         }
         if (typeof updates === 'object') {
-            const promises = Object.keys(updates).map(k => updateLastProcessedEvent(k, updates[k].last, updates[k].new));
+            const promises = Object.keys(updates).map(k => this.updateOne(k, updates[k].last, updates[k].new));
             return Promise.all(promises);
         }
     }
@@ -103,7 +114,7 @@ class DynamoOrderControlDb {
     }
 }
 
-let db = new DynamoOrderControlDb(process.env.ORDER_CONTROL_TABLE, process.env.ORDER_CONTROL_DB_URL);
+let db; // = new DynamoOrderControlDb(process.env.ORDER_CONTROL_TABLE, process.env.ORDER_CONTROL_DB_URL);
 
 module.exports = function (options) {
     if (options) { 

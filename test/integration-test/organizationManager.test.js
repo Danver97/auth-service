@@ -2,13 +2,15 @@ const assert = require('assert');
 const DynamoDB = require('aws-sdk/clients/dynamodb');
 const ENV = require('../../lib/env');
 const orgEvents = require('../../lib/organization-events');
-const repo = require('../../infrastructure/repository/repositoryManager')('dynamodb');
+const repoFunc = require('../../infrastructure/repository/repositoryManager');
 const Organization = require('../../domain/models/organization.class');
 const Permission = require('../../domain/models/permission.class');
 const Role = require('../../domain/models/role.class');
 const OrganizationManager = require('../../domain/logic/organizationManager');
 const OrganizationManagerError = require('../../domain/errors/organizationManager.error');
 
+const eventStoreType = (!process.env.TEST || process.env.TEST === 'unit') ? 'testdb' : 'dynamodb';
+const repo = repoFunc(eventStoreType);
 let orgMgr = new OrganizationManager(repo);
 
 describe('Organization Manager unit test', function () {

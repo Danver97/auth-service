@@ -12,53 +12,6 @@ else if (process.env.SNS_URL)
 const sns = new SNS(snsParams);
 
 
-/* Test event */
-/*
-{
-    "Records": [
-        {
-            "eventID": "1",
-            "eventVersion": "1.0",
-            "dynamodb": {
-                "Keys": {
-                    "StreamId": {
-                        "S": "1"
-                    },
-                    "EventId": {
-                        "N": "1"
-                    }
-                },
-                "NewImage": {
-                    "Payload": {
-                        "M": {
-                            "Field": {
-                                "S": "Field!"
-                            }
-                        }
-                    },
-                    "Message": {
-                        "S": "New event!"
-                    },
-                    "StreamId": {
-                        "S": "1"
-                    },
-                    "EventId": {
-                        "N": "1"
-                    }
-                },
-                "StreamViewType": "NEW_AND_OLD_IMAGES",
-                "SequenceNumber": "111",
-                "SizeBytes": 26
-            },
-            "awsRegion": "us-west-2",
-            "eventName": "INSERT",
-            "eventSourceARN": "eventsourcearn",
-            "eventSource": "aws:dynamodb"
-        }
-    ]
-}
-*/
-
 function unwrap(o) {
     if (typeof o !== 'object')
         return o;

@@ -58,8 +58,8 @@ let writer, orderControl, handler;
 
 async function init() {
     writer = await writerFunc(writerOptions);
-    orderControl = orderControlFunc(orderCtrlDb);
-    handler = handlerFunc(writer, orderControl);
+    orderControl = orderControlFunc(orderCtrlDb, { fromEnv: true });
+    handler = handlerFunc(writer, orderControl, 'log');
 }
 
 exports.mongoDenormalizer = async function(event) {
