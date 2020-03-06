@@ -1,3 +1,4 @@
+// #region Imports
 const assert = require('assert');
 const request = require('supertest');
 const AWS = require('aws-sdk/global');
@@ -16,10 +17,14 @@ const dMongoHandlerFunc = require('../../infrastructure/denormalizers/mongodb/ha
 const dMongoWriterFunc = require('../../infrastructure/denormalizers/mongodb/writer');
 const dMongoOrderCtrlFunc = require('../../infrastructure/denormalizers/mongodb/orderControl');
 
+const defaultRoles = require('../../domain/defaultRoles');
+const checkPerm = require('../../infrastructure/api/permissionChecker');
+
 const User = require('../../domain/models/user.class');
 const Permission = require('../../domain/models/permission.class');
 const Role = require('../../domain/models/role.class');
 const Organization = require('../../domain/models/organization.class');
+// #endregion
 
 AWS.config = new AWS.Config({ region: process.env.AWS_DEFAULT_REGION || 'eu-west-2' });
 const dynamodb = new DynamoDB();
@@ -44,6 +49,8 @@ let mongoColl;
 
 const waitAsync = ms => new Promise(resolve => setTimeout(resolve, ms));
 const processEventTime = 10000;
+
+//#region Setup and Utils functions
 
 async function setUpMongoClient(mongoOptions) {
     const mongodb = new MongoClient(mongoOptions.connString, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -117,6 +124,7 @@ async function cleanUpData(orgId, userId) {
 function toJSON(obj) {
     return JSON.parse(JSON.stringify(obj));
 }
+//#endregion
 
 describe('Api unit test', function () {
     if (process.env.TEST === 'integration') {
@@ -137,6 +145,8 @@ describe('Api unit test', function () {
         lastname: 'Doe',
         email: 'john.doe@gmail.com',
     });
+    let authorizedUser;
+    let authorizedToken;
     const perm1 = new Permission('auth-service', 'addRole');
     const perm2 = new Permission('auth-service', 'removeRole');
     let role1 = new Role('waiter1', [perm1]);
@@ -145,7 +155,8 @@ describe('Api unit test', function () {
     const orgName2 = 'Risto2';
     let orgId1 = ':orgId';
 
-    before(async () => {
+    before(async function () {
+        this.timeout(20000);
         let mongoOptions;
         if (!process.env.TEST || process.env.TEST === 'unit') {
             mongoOptions = {
@@ -165,6 +176,7 @@ describe('Api unit test', function () {
         await setUpQuery(mongoOptions);
         app = appFunc(orgMgr, userMgr, queryMgr, 'err');
         req = request(app);
+        await checkPerm.init();
     });
 
     beforeEach(async () => {
@@ -186,6 +198,17 @@ describe('Api unit test', function () {
         });
 
         orgId1 = await setUpData(orgName1, role1, user1);
+        authorizedUser = new User({
+            accountId: 14546434341332,
+            accountType: 'Google',
+            firstname: 'John',
+            lastname: 'Doe',
+            email: 'john.doe@gmail.com',
+            roles: {
+                [orgId1]: defaultRoles.filter(r => r.name === 'OrganizationOwner')
+            },
+        });
+        authorizedToken = await checkPerm.signJWT(authorizedUser);
         await processEvents();
     });
 
@@ -208,7 +231,9 @@ describe('Api unit test', function () {
             .expect(200);
     });
 
-    it(`GET\t/organizations/${orgId1}`, async function () {
+    it.only(`GET\t/organizations/${orgId1}`, async function () {
+        // await req.get(`/organizations/blablabla`)
+        //     .expect(401);
         await req.get(`/organizations/blablabla`)
             .expect(404);
         await req.get(`/organizations/${orgId1}`)

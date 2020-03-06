@@ -16,6 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@danver97/event-sourcing": "^2.1.5",
+    "@danver97/jwt-secure": "^1.0.0",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",

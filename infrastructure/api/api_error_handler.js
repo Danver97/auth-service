@@ -1,5 +1,6 @@
 const apiutils = require('./utils');
 
+const ApiError = require('./api.error');
 const QueryError = require('../query/query.error');
 const OrganizationError = require('../../domain/errors/organization.error');
 const RepositoryError = require('../repository/repo.error');
@@ -9,6 +10,23 @@ const OrganizationManagerError = require('../../domain/errors/organizationManage
 const ValidatorError = require('../../lib/tokenValidator').ValidatorError;
 
 function errorHandler(err, req, res, next) {
+    if (err instanceof ApiError) {
+        switch (err.code) {
+            case ApiError.noTokenErrorCode:
+                apiutils.clientError(res, 'Access token required', 401);
+                return;
+            case ApiError.invalidTokenErrorCode:
+                apiutils.clientError(res, 'Invalid access token', 401);
+                return;
+            case ApiError.tokenExpiredErrorCode:
+                apiutils.clientError(res, 'Access token expired', 401);
+                return;
+            case ApiError.notAuthorizedErrorCode:
+                apiutils.clientError(res, 'Not authorized', 403);
+                return;
+        }
+    }
+
     if (err instanceof PermissionError) {
         switch (err.code) {
             case PermissionError.paramErrorCode:

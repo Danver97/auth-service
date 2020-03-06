@@ -1,16 +1,17 @@
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
-const { OAuth2Client } = require('google-auth-library');
-const jwt = require('jsonwebtoken');
+const JWTSecure = require('@danver97/jwt-secure')('test');
 
 const apiutils = require('./utils');
 const presentation = require('./presentation');
 const logger = require('./api_logger');
 const errHandler = require('./api_error_handler');
 const Validator = require('../../lib/tokenValidator').Validator;
+const permCheck = require('./permissionChecker');
 const ENV = require('../../lib/env');
 
+const ApiError = require('./api.error');
 
 // Routes
 const orgRolesAPIFunc = require('./routes/organization_roles.route');
@@ -18,6 +19,7 @@ const orgUsersAPIFunc = require('./routes/organization_users.route');
 const usersAPIFunc = require('./routes/users.route');
 
 const app = express();
+const jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: 30, keyExpirationInterval: 30 });
 const auth2 = new Validator(ENV.CLIENT_ID);
 const checkParam = apiutils.checkParam;
 const addParam = apiutils.addParam;
@@ -62,13 +64,17 @@ app.post('/login', async (req, res) => {
     };
     const user = await userMgr.login(userInfo);
     const jwtPayload = user.toJSON();
-    const jwtToken = jwt.sign(jwtPayload, 'privatekey', {
-        expiresIn: '1h',
-        subject: user.uniqueId,
+    const expInOneHour = new Date((new Date()).setHours((new Date()).getHours() + 1));
+    Object.assign(jwtPayload, {
+        exp: expInOneHour.toISOString(),
+        sub: user.uniqueId,
     });
+    const jwtToken = await jwts.sign(jwtPayload);
     console.log(jwtToken);
     res.json({ token: jwtToken });
 });
+
+// app.use('/organizations', permCheck.verifyToken);
 
 app.post('/organizations', async (req, res) => {
     const name = req.body.name;
