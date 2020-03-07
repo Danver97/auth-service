@@ -6,8 +6,9 @@ class Permission {
      * @param {string} scope The scope of the permission
      * @param {string} name The name of the permission
      * @param {string} [description] The description, tells which actions the permission allows
+     * @param {Object} [paramValues] The parameters defined in its definition with their values
      */
-    constructor(scope, name, description) {
+    constructor(scope, name, description, paramValues) {
         if (!scope || !name)
             throw PermissionError.paramError(`Missing the following parameters:${scope ? '' : ' scope'}${name ? '' : ' name'}`);
         if (typeof scope !== 'string')
@@ -19,6 +20,7 @@ class Permission {
         this.scope = scope;
         this.name = name;
         this.description = description;
+        this.paramValues = paramValues || {};
     }
 
     /**
@@ -30,7 +32,7 @@ class Permission {
     static fromObject(obj) {
         if (!obj)
             throw PermissionError.paramError('Missing the following parameters: obj');
-        return new Permission(obj.scope, obj.name, obj.description);
+        return new Permission(obj.scope, obj.name, obj.description, obj.paramValues);
     }
 }
 
