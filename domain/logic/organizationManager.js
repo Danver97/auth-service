@@ -35,33 +35,35 @@ class OrganizationManager {
         });
     }
 
-    roleAdded(orgId, role) {
+    roleDefinitionAdded(orgId, roleDef) {
         return this.optimisticLocking(async () => {
             const org = await this.repo.getOrganization(orgId);
-            org.addRole(role);
-            await this.repo.roleAdded(org, role);
+            org.addRoleDefinition(roleDef);
+            await this.repo.roleDefinitionAdded(org, roleDef);
         });
     }
 
-    roleChanged(orgId, roleId, changes) {
+    roleDefinitionChanged(orgId, roleId, changes) {
         return this.optimisticLocking(async () => {
-            if (!changes.name && !changes.permissions)
+            if (!changes.name && !changes.paramMapping && !changes.permissions)
                 throw OrganizationManagerError.noRoleChangesError('No changes to apply to role');
             const org = await this.repo.getOrganization(orgId);
-            const role = org.getRole(roleId);
+            const roleDef = org.getRoleDefinition(roleId);
             if (changes.name)
-                role.changeName(changes.name);
+                roleDef.changeName(changes.name);
+            if (changes.paramMapping)
+                roleDef.changeParamsMapping(changes.paramMapping);
             if (changes.permissions)
-                role.changePermissions(changes.permissions);
-            await this.repo.roleChanged(org, role);
+                roleDef.changePermissions(changes.permissions);
+            await this.repo.roleDefinitionChanged(org, roleDef);
         });
     }
 
-    roleRemoved(orgId, roleId) {
+    roleDefinitionRemoved(orgId, roleId) {
         return this.optimisticLocking(async () => {
             const org = await this.repo.getOrganization(orgId);
-            org.removeRole(roleId);
-            await this.repo.roleRemoved(org, roleId);
+            org.removeRoleDefinition(roleId);
+            await this.repo.roleDefinitionRemoved(org, roleId);
         });
     }
 

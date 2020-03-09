@@ -7,8 +7,6 @@ const Organization = require('../../domain/models/organization.class');
 const PermissionDefinition = require('../../domain/models/permissionDef.class');
 const RoleDefinition = require('../../domain/models/roleDef.class');
 const RoleInstance = require('../../domain/models/roleInstance.class');
-const Permission = require('../../domain/models/permission.class');
-const Role = require('../../domain/models/role.class');
 const RepositoryError = require('../../infrastructure/repository/repo.error');
 
 function toJSON(obj) {
@@ -46,9 +44,6 @@ describe('Repository Manager unit test', function () {
             },
         }
     });
-    const perm = new Permission('auth-service', 'addRole');
-    const perm2 = new Permission('auth-service', 'removeRole');
-    const role = new Role('waiter', [perm]);
     const userId = 'userId1';
     const userOptions = {
         accountId: 14546434341331,
