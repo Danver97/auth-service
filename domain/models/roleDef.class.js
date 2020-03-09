@@ -1,4 +1,5 @@
 const uuid = require('uuid/v4');
+const Role = require('./role.class');
 const PermissionDefinition = require('./permissionDef.class');
 const RoleDefinitionError = require('../errors/roleDef.error');
 
@@ -100,16 +101,16 @@ class RoleDefinition {
     _buildReverseMapping(paramMapping) {
         const paramReverseMapping = {};
         Object.entries(paramMapping).forEach(([key, value]) => {
-            paramReverseMapping[value.mapping] = key;
+            paramReverseMapping[value.mapping] = { revMapping: key, required: value.required };
         });
         return paramReverseMapping;
     }
 
     _checkForMissingParameters(paramReverseMapping, permissions) {
         const permissionsParamsList = permissions.map(p => Object.keys(p.parameters).filter(k => p.parameters[k].required)).flat();
-        const missingParmeters = permissionsParamsList.filter(p => !paramReverseMapping[p]);
+        const missingParmeters = permissionsParamsList.filter(p => (!paramReverseMapping[p] || !paramReverseMapping[p].required));
         if (missingParmeters.length > 0)
-            throw RoleDefinitionError.paramError(`Params mapping not well created, following parameters were used in the permission list, but not in the param mapping: ${missingParmeters}`);
+            throw RoleDefinitionError.paramError(`Params mapping not well created, following required parameters were used in the permission list, but not in the param mapping: ${missingParmeters}`);
     }
 
     changeName(name) {
@@ -129,6 +130,25 @@ class RoleDefinition {
         this._checkArrayOfPermissions(permissions);
         this._checkForMissingParameters(this.paramReverseMapping, permissions);
         this.permissions = permissions;
+    }
+
+    /**
+     * 
+     * @param {object} paramValues 
+     * @param {string|number|boolean|object} paramValues.param_id 
+     */
+    toRole(paramValues = {}) {
+        const missingParmeters = Object.values(this.paramReverseMapping)
+            .filter(v => (v.required && !paramValues[v.revMapping]))
+            .map(v => v.revMapping);
+        if (missingParmeters.length > 0)
+            throw RoleDefinitionError.paramError(`paramValues is missing the following required values: ${missingParmeters}`);
+        const values = {};
+        Object.keys(paramValues).forEach(k => {
+            values[k] = Object.assign({ value: paramValues[k] }, this.paramMapping[k]);
+        });
+        const permissions = this.permissions.map(p => p.toPermission(paramValues));
+        return new Role(this.name, permissions, values);
     }
 
     get id() {

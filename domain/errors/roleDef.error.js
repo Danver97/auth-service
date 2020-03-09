@@ -5,6 +5,10 @@ const errorsTypes = {
         code: 0,
         name: 'paramError',
     },
+    /* paramMappingsError: {
+        code: 1,
+        name: 'paramMappingsError',
+    }, */
 };
 
 class RoleDefinitionError extends ExtendableError {

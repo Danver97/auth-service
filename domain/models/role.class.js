@@ -7,14 +7,20 @@ class Role {
      * @constructor
      * @param {string} name The name of the Role
      * @param {Permission[]} [permissions] The list of permission of this Role
+     * @param {Object} [obj.paramValues]
+     * @param {Object} obj.paramValues.param_id
+     * @param {string} obj.paramValues.param_id.mapping
+     * @param {any} obj.paramValues.param_id.value
      */
-    constructor(name, permissions) {
+    constructor(name, permissions, paramValues) {
         this._checkName(name);
         this.roleId = uuid();
         this.name = name;
         if (permissions)
             this._checkArrayOfPermissions(permissions);
+        this._checkParamValues(paramValues);
         this.permissions = permissions || [];
+        this.paramValues = paramValues || {};
     }
 
     /**
@@ -25,26 +31,39 @@ class Role {
      * @param {string} obj.permissions[].scope
      * @param {string} obj.permissions[].name
      * @param {string} obj.permissions[].description
+     * @param {Object} [obj.paramValues]
+     * @param {Object} obj.paramValues.param_id
+     * @param {string} obj.paramValues.param_id.mapping
+     * @param {any} obj.paramValues.param_id.value
      */
     static fromObject(obj) {
         if (!obj)
             throw RoleError.paramError('Missing the following parameters: obj');
         const permissions = obj.permissions.map(p => Permission.fromObject(p));
-        const role = new Role(obj.name, permissions);
+        const role = new Role(obj.name, permissions, obj.paramValues);
         role.roleId = obj.roleId;
         return role;
     }
 
     _checkArrayOfPermissions(permissions) {
         if (!Array.isArray(permissions) || (permissions.length > 0 && !(permissions[0] instanceof Permission)))
-            throw new RoleError('permissions must be an array of Permission instances');
+            throw RoleError.paramError('permissions must be an array of Permission instances');
     }
 
     _checkName(name) {
         if (!name)
-            throw new RoleError(`Missing the following parameters:${name ? '' : ' name'}`);
+            throw RoleError.paramError(`Missing the following parameters:${name ? '' : ' name'}`);
         if (typeof name !== 'string')
-            throw new RoleError('name must be a string');
+            throw RoleError.paramError('name must be a string');
+    }
+
+    _checkParamValues(paramValues = {}) {
+        Object.keys(paramValues).forEach(k => {
+            if (!paramValues[k].mapping || !paramValues[k].value)
+                throw RoleError.paramError(`Missing the following paramters from the paramValue ${k}:
+                ${paramValues[k].mapping ? '' : 'paramValues[k].mapping'}
+                ${paramValues[k].value ? '' : 'paramValues[k].value'}`)
+        });
     }
 
     changeName(name) {
