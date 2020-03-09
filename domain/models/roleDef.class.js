@@ -16,6 +16,7 @@ class RoleDefinition {
      * @param {string} [options.paramMapping.param_id.name] Readable name of the RoleDefinition parameter
      * @param {string} [options.paramMapping.param_id.description] Description of the RoleDefinition parameter
      * @param {string} [options.paramMapping.param_id.required] true/false, tells if the RoleDefinition parameter is required
+     * @param {string} [options.paramMapping.param_id.value] true/false, tells if the RoleDefinition parameter is required
      * @param {string} options.paramMapping.param_id.mapping The parameter of the PermissionDefinition to which this RoleDefinition parameter is mapped
      * @param {PermissionDefinition[]} [options.permissions] The list of PermissionDefinition of this RoleDefinition
      */
@@ -28,6 +29,7 @@ class RoleDefinition {
         this.paramMapping = options.paramMapping;
         this.permissions = options.permissions || [];
         this.paramReverseMapping = this._buildReverseMapping(this.paramMapping);
+        this._markRequiredParamMapping(this.paramMapping, this.paramReverseMapping, this.permissions);
         this._checkForMissingParameters(this.paramReverseMapping, this.permissions);
     }
 
@@ -106,6 +108,16 @@ class RoleDefinition {
         return paramReverseMapping;
     }
 
+    _markRequiredParamMapping(paramMapping, revParamMapping, permissions) {
+        const requiredParamsList = permissions.map(p => Object.keys(p.parameters).filter(k => p.parameters[k].required)).flat();
+        requiredParamsList.forEach(p => {
+            if (revParamMapping[p]) {
+                revParamMapping[p].required = true;
+                paramMapping[revParamMapping[p].revMapping].required = true;
+            }
+        });
+    }
+
     _checkForMissingParameters(paramReverseMapping, permissions) {
         const permissionsParamsList = permissions.map(p => Object.keys(p.parameters).filter(k => p.parameters[k].required)).flat();
         const missingParmeters = permissionsParamsList.filter(p => (!paramReverseMapping[p] || !paramReverseMapping[p].required));
@@ -121,6 +133,7 @@ class RoleDefinition {
     changeParamsMapping(paramMapping) {
         this._checkParamMapping(paramMapping);
         const paramReverseMapping = this._buildReverseMapping(paramMapping);
+        this._markRequiredParamMapping(paramMapping, paramReverseMapping, this.permissions);
         this._checkForMissingParameters(paramReverseMapping, this.permissions);
         this.paramMapping = paramMapping;
         this.paramReverseMapping = paramReverseMapping;

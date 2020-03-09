@@ -27,7 +27,6 @@ describe('Role class unit test', function () {
                 name: 'OrganizationId',
                 description: 'The id of the organization the user belongs to',
                 mapping: `${permDef1.scope}:${permDef1.name}:orgId`,
-                required: true,
             },
             'restId': {
                 mapping: `${permDef1.scope}:${permDef1.name}:restId`,
@@ -43,7 +42,6 @@ describe('Role class unit test', function () {
                 name: 'OrganizationId',
                 description: 'The id of the organization the user belongs to',
                 mapping: `${permDef1.scope}:${permDef1.name}:orgId`,
-                required: true,
             },
         }
     };
@@ -90,7 +88,6 @@ describe('Role class unit test', function () {
                 name: 'OrganizationId',
                 description: 'The id of the organization the user belongs to',
                 mapping: `${permDef1.scope}:${permDef1.name}:orgId`,
-                required: true
             }
         };
         role.changeParamsMapping(newMapping);
