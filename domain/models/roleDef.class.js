@@ -35,8 +35,8 @@ class RoleDefinition {
 
     /**
      * @param {Object} obj 
-     * @param {string} [obj.roleDefId]
-     * @param {string} [obj.orgId]
+     * @param {string} obj.roleDefId
+     * @param {string} obj.orgId
      * @param {string} obj.name
      * @param {Object[]} obj.permissions
      * @param {string} obj.permissions[].scope
@@ -53,8 +53,10 @@ class RoleDefinition {
         if (!obj)
             throw RoleDefinitionError.paramError('Missing the following parameters: obj');
         obj.permissions = obj.permissions.map(p => PermissionDefinition.fromObject(p));
+        const roleDefId = obj.roleDefId;
+        delete obj.roleDefId;
         const role = new RoleDefinition(obj);
-        role.roleDefId = obj.roleDefId;
+        role.roleDefId = roleDefId;
         return role;
     }
 

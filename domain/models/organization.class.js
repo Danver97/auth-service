@@ -1,5 +1,6 @@
 const uuid = require('uuid/v4');
-const Role = require('./role.class');
+const RoleDefinition = require('./roleDef.class');
+const RoleInstance = require('./roleInstance.class');
 const OrganizationError = require('../errors/organization.error');
 
 class Organization {
@@ -23,12 +24,18 @@ class Organization {
      * @param {string} obj.orgId
      * @param {string} obj.name
      * @param {Object[]} obj.roles
-     * @param {string} obj.roles[].roleId
+     * @param {string} obj.roles[].roleDefId
      * @param {string} obj.roles[].name
      * @param {Object[]} obj.roles[].permissions
      * @param {string} obj.roles[].permissions[].scope
      * @param {string} obj.roles[].permissions[].name
      * @param {string} obj.roles[].permissions[].description
+     * @param {Object} obj.roles[].paramMapping The parameterMapping of the RoleDefinition
+     * @param {Object} obj.roles[].paramMapping.param_id id of the RoleDefinition parameter
+     * @param {string} [obj.roles[].paramMapping.param_id.name] Readable name of the RoleDefinition parameter
+     * @param {string} [obj.roles[].paramMapping.param_id.description] Description of the RoleDefinition parameter
+     * @param {string} [obj.roles[].paramMapping.param_id.required] true/false, tells if the RoleDefinition parameter is required
+     * @param {string} obj.roles[].paramMapping.param_id.mapping The parameter of the PermissionDefinition to which this RoleDefinition parameter is mapped
      * @param {Object[]} obj.users[]
      * @param {string} obj.users[].userId
      * @param {string[]} obj.users[].roles
@@ -40,12 +47,13 @@ class Organization {
         org.orgId = obj.orgId;
         if (obj.roles)
             obj.roles.forEach(r => {
-                const role = Role.fromObject(r);
-                org.addRole(role);
+                const role = RoleDefinition.fromObject(r);
+                org.addRoleDefinition(role);
             });
         if (obj.users)
             obj.users.forEach(u => {
-                org.addUser(u.userId, u.roles);
+                const userRoles = u.roles.map(ri => new RoleInstance({roleDef: org.getRoleDefinition(ri.roleDefId), paramValues: ri.paramValues}));
+                org.addUser(u.userId, userRoles);
             });
         return org;
     }
@@ -66,43 +74,44 @@ class Organization {
 
     /**
      * Adds a new Role to the Organization. If already present throws an error.
-     * @param {Role} role The role to add to the organization
+     * @param {Role} roleDef The role to add to the organization
      */
-    addRole(role) {
+    addRoleDefinition(roleDef) {
         this._checkIfDeleted();
-        if (!(role instanceof Role))
+        if (!(roleDef instanceof RoleDefinition))
             throw OrganizationError.paramError('role must be an instance of Role');
-        if (this._roles[role.roleId])
-            throw OrganizationError.roleAlreadyExistsError(`role with id ${role.roleId} already exists`);
-        this._roles[role.roleId] = role;
+        if (this._roles[roleDef.roleDefId])
+            throw OrganizationError.roleAlreadyExistsError(`role with id ${roleDef.roleDefId} already exists`);
+        this._roles[roleDef.roleDefId] = roleDef;
     }
 
     /**
      * Retrieves a Role from the Organization.  
      * If not present, throws an error.
-     * @param {string} roleId Id identifying the role to remove
+     * @param {string} roleDefId Id identifying the role to remove
+     * @returns {RoleDefinition}
      */
-    getRole(roleId) {
+    getRoleDefinition(roleDefId) {
         this._checkIfDeleted();
-        if (typeof roleId !== 'string')
+        if (typeof roleDefId !== 'string')
             throw OrganizationError.paramError('roleId must be a string');
-        if (!this._roles[roleId])
-            throw OrganizationError.roleDoesNotExistError(`role with id ${roleId} does not exist`);
-        return this._roles[roleId];
+        if (!this._roles[roleDefId])
+            throw OrganizationError.roleDoesNotExistError(`role with id ${roleDefId} does not exist`);
+        return this._roles[roleDefId];
     }
 
     /**
      * Removes an existing Role from the Organization.  
      * If not present, throws an error.
-     * @param {string} roleId Id identifying the role to remove
+     * @param {string} roleDefId Id identifying the role to remove
      */
-    removeRole(roleId) {
+    removeRoleDefinition(roleDefId) {
         this._checkIfDeleted();
-        if (typeof roleId !== 'string')
+        if (typeof roleDefId !== 'string')
             throw OrganizationError.paramError('roleId must be a string');
-        if (!this._roles[roleId])
-            throw OrganizationError.roleDoesNotExistError(`role with id ${roleId} does not exist`);
-        delete this._roles[roleId];
+        if (!this._roles[roleDefId])
+            throw OrganizationError.roleDoesNotExistError(`role with id ${roleDefId} does not exist`);
+        delete this._roles[roleDefId];
     }
 
     /**
@@ -117,7 +126,7 @@ class Organization {
             throw OrganizationError.paramError('userId must be a string');
         if (this._users[userId])
             throw OrganizationError.userAlreadyExistsError(`user with id ${userId} already exists in the organization`);
-        this._users[userId] = new Set();
+        this._users[userId] = new Map();
         if (roles)
             this.assignRolesToUser(userId, roles);
     }
@@ -127,7 +136,7 @@ class Organization {
      * If user is not present in the Organization, throws an error.  
      * If some role does not exist in the Organization, throws an error.
      * @param {string} userId The id of the user to which assign the roles
-     * @param {string[]} roles An array of role ids
+     * @param {RoleInstance[]} roles An array of role ids
      */
     assignRolesToUser(userId, roles) {
         this._checkIfDeleted();
@@ -135,12 +144,12 @@ class Organization {
             throw OrganizationError.paramError('userId must be a string');
         if (!this._users[userId])
             throw OrganizationError.userDoesNotExistError(`user with id ${userId} does not exist in the organization`);
-        if (!Array.isArray(roles) || roles.length <= 0 || typeof roles[0] !== 'string')
-            throw OrganizationError.paramError('roles must be a non empty array of role ids');
+        if (!Array.isArray(roles) || roles.length <= 0 || !(roles[0] instanceof RoleInstance))
+            throw OrganizationError.paramError('roles must be a non-empty array of instances of RoleInstance');
         roles.forEach(r => {
-            if (!this._roles[r])
-                throw OrganizationError.assignedRoleDoesNotExistsError(`role ${r} does not exist in the organization`);
-            this._users[userId].add(r);
+            if (!this._roles[r.id])
+                throw OrganizationError.assignedRoleDoesNotExistsError(`role ${r.id} does not exist in the organization`);
+            this._users[userId].set(r.id, r);
         });
     }
 
@@ -158,7 +167,7 @@ class Organization {
         if (!this._users[userId])
             throw OrganizationError.userDoesNotExistError(`user with id ${userId} does not exist in the organization`);
         if (!Array.isArray(roles) || roles.length <= 0 || typeof roles[0] !== 'string')
-            throw OrganizationError.paramError('roles must be a non empty array of role ids');
+            throw OrganizationError.paramError('roles must be a non-empty array of ids of RoleInstance');
         roles.forEach(r => {
             if (!this._roles[r])
                 throw OrganizationError.removedRoleDoesNotExistsError(`role ${r} does not exist in the organization`);

@@ -43,6 +43,10 @@ class RoleInstance {
             throw RoleInstanceError.paramError(`Missing the following required paramters: ${missingParams}`);
     }
 
+    get id() {
+        return this.roleDef.roleDefId;
+    }
+
     toJSON() {
         return {
             orgId: this.roleDef.orgId,
