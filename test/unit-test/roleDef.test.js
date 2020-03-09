@@ -17,6 +17,8 @@ describe('Role class unit test', function () {
             restId: { name: 'RestaurantId', description: 'The id of the restaurant', required: true },
         }
     });
+    const permDef3 = new PermissionDefinition({ scope: 'auth-service', name: 'removeRole', parameters: {
+        orgId: { name: 'OrganizationId', description: 'The id of the organization the user belongs to', required: true }, } });
     const optionsDefaultRole = {
         roleDefId: 'Waiter',
         name: 'Waiter',
@@ -41,7 +43,7 @@ describe('Role class unit test', function () {
             'orgId': {
                 name: 'OrganizationId',
                 description: 'The id of the organization the user belongs to',
-                mapping: `${permDef1.scope}:${permDef1.name}:orgId`,
+                mapping: [`${permDef1.scope}:${permDef1.name}:orgId`, `${permDef3.scope}:${permDef3.name}:orgId`],
             },
         }
     };
@@ -85,12 +87,33 @@ describe('Role class unit test', function () {
         const role = new RoleDefinition(optionsDefaultRole);
         assert.throws(() => role.changeParamsMapping(), RoleDefinitionError);
         assert.throws(() => role.changeParamsMapping({}), RoleDefinitionError);
+        assert.throws(() => role.changeParamsMapping({
+            'orgId': {
+                name: 'OrganizationId',
+                description: 'The id of the organization the user belongs to',
+                mapping: `${permDef1.scope}:${permDef1.name}:orgId`,
+            },
+            'restId': {
+                name: 'RestaurantId',
+                description: 'The id of the restaurant',
+                mapping: `${permDef1.scope}:${permDef1.name}:orgId`,
+            },
+        }), RoleDefinitionError);
+        assert.throws(() => role.changeParamsMapping({
+            'orgId': {
+                name: 'OrganizationId',
+                description: 'The id of the organization the user belongs to',
+                mapping: [`${permDef1.scope}:${permDef1.name}:orgId`, `${permDef1.scope}:${permDef1.name}:orgId`],
+            },
+        }), RoleDefinitionError);
+
+        
         const newMapping = {
             'orgId': {
                 name: 'OrganizationId',
                 description: 'The id of the organization the user belongs to',
                 mapping: `${permDef1.scope}:${permDef1.name}:orgId`,
-            }
+            },
         };
         role.changeParamsMapping(newMapping);
         assert.strictEqual(role.paramMapping, newMapping);
@@ -109,6 +132,8 @@ describe('Role class unit test', function () {
         assert.deepStrictEqual(role.permissions, [permDef1, newPerm]);
         role.changePermissions([newPerm]);
         assert.deepStrictEqual(role.permissions, [newPerm]);
+        role.changePermissions([permDef3]);
+        assert.deepStrictEqual(role.permissions, [permDef3]);
     });
 
     it('check toRole works', function () {

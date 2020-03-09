@@ -54,7 +54,7 @@ class RoleDefinition {
             throw RoleDefinitionError.paramError('Missing the following parameters: obj');
         obj.permissions = obj.permissions.map(p => PermissionDefinition.fromObject(p));
         const roleDefId = obj.roleDefId;
-        delete obj.roleDefId;
+        if (obj.orgId) delete obj.roleDefId;
         const role = new RoleDefinition(obj);
         role.roleDefId = roleDefId;
         return role;
@@ -92,8 +92,8 @@ class RoleDefinition {
                 throw RoleDefinitionError.paramError(`The param mapping property 'name' must be a string`);
             if (p.description && typeof p.description !== 'string')
                 throw RoleDefinitionError.paramError(`The param mapping property 'description' must be a string`);
-            if (!p.mapping || typeof p.mapping !== 'string')
-                throw RoleDefinitionError.paramError(`The param mapping property 'mapping' must be a string. The property is required`);
+            if (!p.mapping || (typeof p.mapping !== 'string' && (!Array.isArray(p.mapping) || (p.mapping.length > 0 && typeof p.mapping[0] !== 'string'))))
+                throw RoleDefinitionError.paramError(`The param mapping property 'mapping' must be a string or an array of strings. The property is required`);
         });
     }
 
@@ -105,6 +105,16 @@ class RoleDefinition {
     _buildReverseMapping(paramMapping) {
         const paramReverseMapping = {};
         Object.entries(paramMapping).forEach(([key, value]) => {
+            if (Array.isArray(value.mapping)) {
+                value.mapping.forEach(m => {
+                    if (paramReverseMapping[m])
+                        throw RoleDefinitionError.paramError(`Multiple role param map to the same permission param ${m}`);
+                    paramReverseMapping[m] = { revMapping: key, required: value.required };
+                });
+                return;
+            }
+            if (paramReverseMapping[value.mapping])
+                throw RoleDefinitionError.paramError(`Multiple role param map to the same permission param ${value.mapping}`);
             paramReverseMapping[value.mapping] = { revMapping: key, required: value.required };
         });
         return paramReverseMapping;
@@ -143,7 +153,12 @@ class RoleDefinition {
 
     changePermissions(permissions) {
         this._checkArrayOfPermissions(permissions);
-        this._checkForMissingParameters(this.paramReverseMapping, permissions);
+        const paramMapping = JSON.parse(JSON.stringify(this.paramMapping));
+        const paramReverseMapping = this._buildReverseMapping(paramMapping);
+        this._markRequiredParamMapping(paramMapping, paramReverseMapping, permissions);
+        this._checkForMissingParameters(paramReverseMapping, permissions);
+        this.paramMapping = paramMapping;
+        this.paramReverseMapping = paramReverseMapping;
         this.permissions = permissions;
     }
 

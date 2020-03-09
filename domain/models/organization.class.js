@@ -79,7 +79,7 @@ class Organization {
     addRoleDefinition(roleDef) {
         this._checkIfDeleted();
         if (!(roleDef instanceof RoleDefinition))
-            throw OrganizationError.paramError('role must be an instance of Role');
+            throw OrganizationError.paramError('role must be an instance of RoleDefinition');
         if (this._roles[roleDef.roleDefId])
             throw OrganizationError.roleAlreadyExistsError(`role with id ${roleDef.roleDefId} already exists`);
         this._roles[roleDef.roleDefId] = roleDef;
