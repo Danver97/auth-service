@@ -61,6 +61,7 @@ describe('Role class unit test', function () {
         assert.strictEqual(roleDef.description, optionsDefaultRole.description);
         assert.deepStrictEqual(roleDef.permissions, optionsDefaultRole.permissions);
         assert.deepStrictEqual(roleDef.paramMapping, optionsDefaultRole.paramMapping);
+        assert.strictEqual(roleDef.paramMapping.orgId.required, true);
 
         roleDef = new RoleDefinition(optionsRole);
         assert.ok(typeof roleDef.roleDefId === 'string');
@@ -68,6 +69,7 @@ describe('Role class unit test', function () {
         assert.strictEqual(roleDef.name, optionsRole.name);
         assert.deepStrictEqual(roleDef.permissions, optionsRole.permissions);
         assert.deepStrictEqual(roleDef.paramMapping, optionsRole.paramMapping);
+        assert.strictEqual(roleDef.paramMapping.orgId.required, true);
     });
 
     it('check changeName works', function () {
