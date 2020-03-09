@@ -1,5 +1,5 @@
 const RoleDefinition = require('./roleDef.class');
-const RoleError = require('../errors/role.error');
+const RoleInstanceError = require('../errors/roleInstance.error');
 
 class RoleInstance {
     /**
@@ -24,7 +24,7 @@ class RoleInstance {
      */
     static fromObject(obj) {
         if (!obj)
-            throw RoleError.paramError('Missing the following parameters: obj');
+            throw RoleInstanceError.paramError('Missing the following parameters: obj');
         const roleDef = RoleDefinition.fromObject(obj.roleDef);
         const roleInstance = new RoleInstance({ roleDef, paramValues: obj.paramValues });
         return roleInstance;
@@ -33,14 +33,14 @@ class RoleInstance {
     _checkOptions(options) {
         const { roleDef, paramValues = {} } = options;
         if (!(roleDef instanceof RoleDefinition))
-            throw RoleError.paramError('options.roleDef must be an instance of RoleDefinition');
+            throw RoleInstanceError.paramError('options.roleDef must be an instance of RoleDefinition');
         this._checkParamValues(roleDef, paramValues);
     }
 
     _checkParamValues(roleDef, paramValues = {}) {
         const missingParams = Object.entries(roleDef.paramMapping).filter(([param_id, param]) => (!paramValues[param_id] && param.required));
         if (missingParams.length > 0)
-            throw RoleError.paramError(`Missing the following required paramters: ${missingParams}`);
+            throw RoleInstanceError.paramError(`Missing the following required paramters: ${missingParams}`);
     }
 
     toJSON() {

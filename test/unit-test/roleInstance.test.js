@@ -3,7 +3,7 @@ const Role = require('../../domain/models/role.class');
 const RoleInstance = require('../../domain/models/roleInstance.class');
 const PermissionDefinition = require('../../domain/models/permissionDef.class');
 const RoleDefinition = require('../../domain/models/roleDef.class');
-const RoleError = require('../../domain/errors/role.error');
+const RoleInstanceError = require('../../domain/errors/roleInstance.error');
 const RoleDefinitionError = require('../../domain/errors/roleDef.error');
 
 describe('Role class unit test', function () {
@@ -42,8 +42,8 @@ describe('Role class unit test', function () {
     });
 
     it('check constructor works', function () {
-        assert.throws(() => new RoleInstance(), RoleError);
-        assert.throws(() => new RoleInstance({ roleDef }), RoleError);
+        assert.throws(() => new RoleInstance(), RoleInstanceError);
+        assert.throws(() => new RoleInstance({ roleDef }), RoleInstanceError);
 
         const roleInstance = new RoleInstance({ roleDef, paramValues: { orgId: 'org1' } });
         assert.ok(roleInstance.roleDef instanceof RoleDefinition);
