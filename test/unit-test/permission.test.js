@@ -20,11 +20,11 @@ describe('Permission class unit test', function () {
         let perm = new Permission(scope, name);
         assert.strictEqual(perm.scope, scope);
         assert.strictEqual(perm.name, name);
-        assert.deepStrictEqual(perm.paramValues, {});
+        assert.deepStrictEqual(perm.parameters, {});
 
         perm = new Permission(scope, name, description, paramValues);
         assert.strictEqual(perm.description, description);
-        assert.deepStrictEqual(perm.paramValues, paramValues);
+        assert.deepStrictEqual(perm.parameters, paramValues);
     });
 
     it('check fromObject works', function () {
@@ -33,12 +33,12 @@ describe('Permission class unit test', function () {
             scope,
             name,
             description,
-            paramValues,
+            parameters: paramValues,
         };
         const perm = Permission.fromObject(obj);
         assert.strictEqual(perm.scope, obj.scope);
         assert.strictEqual(perm.name, obj.name);
         assert.strictEqual(perm.description, description);
-        assert.deepStrictEqual(perm.paramValues, paramValues);
+        assert.deepStrictEqual(perm.parameters, paramValues);
     });
 });

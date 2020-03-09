@@ -59,7 +59,7 @@ describe('PermissionDefinition class unit test', function () {
         const permDef = new PermissionDefinition(options2);
         const perm = permDef.toPermission(paramValues);
         assert.ok(perm instanceof Permission);
-        assert.deepStrictEqual(perm.paramValues, {
+        assert.deepStrictEqual(perm.parameters, {
             orgId: paramValues['auth-service:addRole:orgId'],
             orgName: paramValues.orgName,
         });

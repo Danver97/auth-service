@@ -12,15 +12,13 @@ class Role {
      * @param {string} obj.paramValues.param_id.mapping
      * @param {any} obj.paramValues.param_id.value
      */
-    constructor(name, permissions, paramValues) {
+    constructor(name, permissions) {
         this._checkName(name);
         this.roleId = uuid();
         this.name = name;
         if (permissions)
             this._checkArrayOfPermissions(permissions);
-        this._checkParamValues(paramValues);
         this.permissions = permissions || [];
-        this.paramValues = paramValues || {};
     }
 
     /**
@@ -40,7 +38,7 @@ class Role {
         if (!obj)
             throw RoleError.paramError('Missing the following parameters: obj');
         const permissions = obj.permissions.map(p => Permission.fromObject(p));
-        const role = new Role(obj.name, permissions, obj.paramValues);
+        const role = new Role(obj.name, permissions);
         role.roleId = obj.roleId;
         return role;
     }
@@ -55,25 +53,6 @@ class Role {
             throw RoleError.paramError(`Missing the following parameters:${name ? '' : ' name'}`);
         if (typeof name !== 'string')
             throw RoleError.paramError('name must be a string');
-    }
-
-    _checkParamValues(paramValues = {}) {
-        Object.keys(paramValues).forEach(k => {
-            if (!paramValues[k].mapping || !paramValues[k].value)
-                throw RoleError.paramError(`Missing the following paramters from the paramValue ${k}:
-                ${paramValues[k].mapping ? '' : 'paramValues[k].mapping'}
-                ${paramValues[k].value ? '' : 'paramValues[k].value'}`)
-        });
-    }
-
-    changeName(name) {
-        this._checkName(name);
-        this.name = name;
-    }
-
-    changePermissions(permissions) {
-        this._checkArrayOfPermissions(permissions);
-        this.permissions = permissions;
     }
 
     get id() {

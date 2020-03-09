@@ -119,15 +119,6 @@ describe('Role class unit test', function () {
 
         const role = roleDef.toRole({ orgId: 'org1' });
         assert.ok(role instanceof Role);
-        assert.deepStrictEqual(role.paramValues, {
-            orgId: {
-                value: 'org1',
-                mapping: optionsRole.paramMapping.orgId.mapping,
-                name: optionsRole.paramMapping.orgId.name,
-                description: optionsRole.paramMapping.orgId.description,
-                required: optionsRole.paramMapping.orgId.required,
-            }
-        });
     });
 
     it('check fromObject works', function () {
