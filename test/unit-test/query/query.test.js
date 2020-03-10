@@ -3,6 +3,8 @@ const MongoMemoryServer = require('mongodb-memory-server').MongoMemoryServer;
 const MongoClient = require('mongodb').MongoClient;
 const queryMgrFunc = require('../../../infrastructure/query');
 const QueryError = require('../../../infrastructure/query/query.error');
+const RoleDefinition = require('../../../domain/models/roleDef.class');
+const RoleInstance = require('../../../domain/models/roleInstance.class');
 const data = require('./collection.json');
 
 const mongod = new MongoMemoryServer();
@@ -14,10 +16,17 @@ function toJSON(obj) {
     return JSON.parse(JSON.stringify(obj));
 }
 
+const docTypes = {
+    organization: 'organization',
+    role: 'role',
+    roleDef: 'roleDef',
+    user: 'user',
+};
+
 describe('Query Manager unit test', function () {
     let users;
     let orgs;
-    let roles;
+    let roleDefs;
 
     before(async function () {
         this.timeout(10000);
@@ -34,10 +43,10 @@ describe('Query Manager unit test', function () {
     });
 
     beforeEach(() => {
-        users = toJSON(data.filter(d => d._type === 'user'));
-        orgs = toJSON(data.filter(d => d._type === 'organization'));
-        roles = toJSON(data.filter(d => d._type === 'role'));
-    })
+        users = toJSON(data.filter(d => d._type === docTypes.user));
+        orgs = toJSON(data.filter(d => d._type === docTypes.organization));
+        roleDefs = toJSON(data.filter(d => d._type === docTypes.roleDef));
+    });
 
     it('check getUser works', async function () {
         const user = users.filter(u => u.firstname === 'Christian')[0];
@@ -45,10 +54,10 @@ describe('Query Manager unit test', function () {
         assert.deepStrictEqual(userData, user);
     });
 
-    it('check getRole works', async function () {
-        const role = roles.filter(r => r.name === 'role1')[0];
-        const roleData = await queryMgr.getRole(role.orgId, role.roleId);
-        assert.deepStrictEqual(roleData, role);
+    it('check getRoleDefinition works', async function () {
+        const roleDef = roleDefs.filter(r => r.name === 'role1')[0];
+        const roleData = await queryMgr.getRoleDefinition(roleDef.orgId, roleDef.roleDefId);
+        assert.deepStrictEqual(roleData, roleDef);
     });
 
     it('check getOrganization works', async function () {
@@ -61,7 +70,7 @@ describe('Query Manager unit test', function () {
     it('check getOrganizationRoles works', async function () {
         await assert.rejects(() => queryMgr.getOrganizationRoles('blablabla'), QueryError);
         const org = orgs.filter(o => o.name === 'Risto')[0];
-        const rolesExpected = roles.filter(r => r.orgId === org.orgId);
+        const rolesExpected = roleDefs.filter(r => r.orgId === org.orgId);
         const rolesRetrieved = await queryMgr.getOrganizationRoles(org.orgId);
         assert.deepStrictEqual(rolesRetrieved, rolesExpected);
     });
@@ -84,9 +93,17 @@ describe('Query Manager unit test', function () {
         await assert.rejects(() => queryMgr.getOrganizationUserRoles('blablabla'), QueryError);
         await assert.rejects(() => queryMgr.getOrganizationUserRoles(orgId, 'blablabla'), QueryError);
 
-        const rolesExpected = roles.filter(r => user.roles[orgId].includes(r.roleId));
+        const userRoleDefsMap = {};
+        roleDefs.filter(r => user.roles[orgId].map(ur => ur.roleDefId).includes(r.roleDefId)).forEach(r => {
+            userRoleDefsMap[r.roleDefId] = RoleDefinition.fromObject(r);
+        });
+        const rolesExpected = user.roles[orgId].map(ri => new RoleInstance({ roleDef: userRoleDefsMap[ri.roleDefId], paramValues: ri.paramValues }));
+
         const rolesRetrieved = await queryMgr.getOrganizationUserRoles(orgId, user.uniqueId);
         assert.deepStrictEqual(rolesRetrieved, rolesExpected);
+        rolesRetrieved.forEach(r => {
+            assert.ok(r instanceof RoleInstance);
+        });
     });
 
     it('check getFullOrganization works', async function () {
@@ -94,7 +111,7 @@ describe('Query Manager unit test', function () {
 
         const org = toJSON(orgs.filter(o => o.name === 'Risto')[0]);
         org.users = users.filter(u => u.organizations.includes(org.orgId));
-        org.roles = roles.filter(r => r.orgId === org.orgId);
+        org.roles = roleDefs.filter(r => r.orgId === org.orgId);
         const orgRetrieved = await queryMgr.getFullOrganization(org.orgId);
         assert.deepStrictEqual(orgRetrieved, org);
     });
@@ -105,12 +122,19 @@ describe('Query Manager unit test', function () {
         const user = users.filter(u => u.firstname === 'Christian')[0];
         user.organizations = orgs.filter(o => user.organizations.includes(o.orgId));
         Object.keys(user.roles).forEach(k => {
-            const rolesIds = user.roles[k];
-            user.roles[k] = roles.filter(r => rolesIds.includes(r.roleId));
+            const rolesIds = user.roles[k].map(ur => ur.roleDefId);
+            const rolesMap = {};
+            roleDefs.filter(r => rolesIds.includes(r.roleDefId)).forEach(r => {
+                rolesMap[r.roleDefId] = RoleDefinition.fromObject(r);
+            });
+            user.roles[k] = user.roles[k].map(ri => new RoleInstance({ roleDef: rolesMap[ri.roleDefId], paramValues: ri.paramValues }));
         });
 
         const userRetrieved = await queryMgr.getFullUser(user.uniqueId);
         assert.deepStrictEqual(userRetrieved, user);
+        Object.keys(user.roles).forEach(k => {
+            assert.ok(userRetrieved.roles[k][0] instanceof RoleInstance);
+        });
     });
 
     it('check getUserOrganizations works', async function () {
@@ -129,8 +153,8 @@ describe('Query Manager unit test', function () {
         const user = users.filter(u => u.firstname === 'Christian')[0];
         const rolesMapExpected = {}
         Object.keys(user.roles).forEach(k => {
-            const rolesIds = user.roles[k];
-            rolesMapExpected[k] = roles.filter(r => rolesIds.includes(r.roleId));
+            const rolesIds = user.roles[k].map(ur => ur.roleDefId);
+            rolesMapExpected[k] = roleDefs.filter(r => rolesIds.includes(r.roleDefId));
         });
 
         const rolesMapRetrieved = await queryMgr.getUserRoles(user.uniqueId);

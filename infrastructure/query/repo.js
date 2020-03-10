@@ -1,4 +1,6 @@
 const QueryError = require('./query.error');
+const RoleDefinition = require('../../domain/models/roleDef.class');
+const RoleInstance = require('../../domain/models/roleInstance.class');
 
 function getAllOrgRolesAggPipeline(orgId) {
     return [
@@ -121,8 +123,8 @@ class QueryManager {
         return user;
     }
 
-    async getRole(orgId, roleId) {
-        const role = await this.mongoCollection.findOne({ _id: roleId, orgId, _type: 'role' });
+    async getRoleDefinition(orgId, roleId) {
+        const role = await this.mongoCollection.findOne({ _id: roleId, orgId, _type: 'roleDef' });
         if (!role)
             throw QueryError.roleNotFoundError(`role with ${roleId} belonging to organization with id ${orgId} not found`);
         return role;
@@ -140,7 +142,7 @@ class QueryManager {
         const org = await this.getOrganization(orgId);
         if (!org)
             throw QueryError.organizationNotFoundError(`organization with ${orgId} not found`);
-        return await this.mongoCollection.find({ orgId, _type: 'role' }).toArray();
+        return await this.mongoCollection.find({ orgId, _type: 'roleDef' }).toArray();
     }
 
     async getOrganizationUsers(orgId, offset = 0, limit = 200) {
@@ -160,11 +162,12 @@ class QueryManager {
             throw QueryError.userNotFoundError(`user with ${userId} belonging to organization with id ${orgId} not found`);
         if (!user.roles || !user.roles[orgId])
             throw QueryError.userNotBelongingToOrganizationError(`user with ${userId} not belonging to organization with id ${orgId}`);
-        const roleIds = user.roles[orgId];
+        const roleIds = user.roles[orgId].map(r => r.roleDefId);
         if (options.idOnly)
             return roleIds;
-        const roles = await this.mongoCollection.find({ roleId: { $in: roleIds }}).toArray();
-        return roles;
+
+        const roleDefs = await this._getRoleDefinitions(roleIds);
+        return this._getUserRoleInstances(user, roleDefs, orgId);
     }
 
     getFullOrganization(orgId) {
@@ -185,7 +188,7 @@ class QueryManager {
 
     async getFullOrganization_2calls(orgId) {
         const org = await this.getOrganization(orgId);
-        const roles = await this.mongoCollection.find({ orgId, _type: 'role' }).toArray();
+        const roles = await this.mongoCollection.find({ orgId, _type: 'roleDef' }).toArray();
         const users = await this.mongoCollection.find({ organizations: orgId, _type: 'user'}).toArray();
         org.roles = roles;
         org.users = users;
@@ -195,20 +198,15 @@ class QueryManager {
     async getFullUser_2calls(userId) {
         const user = await this.getUser(userId);
         const orgIds = user.organizations;
-        const roleIds = Object.values(user.roles).reduce((acc, v) => acc.concat(v), []);
+        const roleDefIds = Object.values(user.roles)
+            .reduce((acc, v) => acc.concat(v), [])
+            .map(r => r.roleDefId);
 
         const orgs = await this._getOrganizations(orgIds);
-        const roles = await this._getRoles(roleIds);
-
-        const rolesMap = {};
-        roles.forEach(r => {
-            if (!rolesMap[r.orgId])
-                rolesMap[r.orgId] = [];
-            rolesMap[r.orgId].push(r);
-        });
+        const roleDefs = await this._getRoleDefinitions(roleDefIds);
 
         user.organizations = orgs;
-        user.roles = rolesMap;
+        this._getUserRoleInstances(user, roleDefs);
         return user;
     }
 
@@ -216,8 +214,26 @@ class QueryManager {
         return this.mongoCollection.find({ orgId: { $in: orgIds }, _type: 'organization' }).toArray();
     }
 
-    _getRoles(roleIds) {
-        return this.mongoCollection.find({ roleId: { $in: roleIds }}).toArray();
+    _getRoleDefinitions(roleIds) {
+        return this.mongoCollection.find({ roleDefId: { $in: roleIds }, _type: 'roleDef' }).toArray();
+    }
+
+    _getUserRoleInstances(user, roleDefs, orgId) {
+        const rolesMap = {};
+        roleDefs.forEach(r => {
+            rolesMap[r.roleDefId] = RoleDefinition.fromObject(r);
+        });
+
+        const mapToRoleInstance = ri => new RoleInstance({ roleDef: rolesMap[ri.roleDefId], paramValues: ri.paramValues });
+        
+        if (orgId) {
+            return user.roles[orgId].map(mapToRoleInstance);
+        }
+
+        Object.entries(user.roles).forEach(([k, v]) => {
+            user.roles[k] = v.map(mapToRoleInstance);
+        });
+
     }
 
     async getUserOrganizations(userId) {
@@ -230,9 +246,11 @@ class QueryManager {
 
     async getUserRoles(userId) {
         const user = await this.getUser(userId);
-        const roleIds = Object.values(user.roles).reduce((acc, v) => acc.concat(v), []);
+        const roleIds = Object.values(user.roles)
+            .reduce((acc, v) => acc.concat(v), [])
+            .map(r => r.roleDefId);
 
-        const roles = await this._getRoles(roleIds);
+        const roles = await this._getRoleDefinitions(roleIds);
         const rolesMap = {};
         roles.forEach(r => {
             if (!rolesMap[r.orgId])
