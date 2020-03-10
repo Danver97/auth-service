@@ -7,6 +7,7 @@ let writer = null;
 const docTypes = {
     organization: 'organization',
     role: 'role',
+    roleDef: 'roleDef',
     user: 'user',
 };
 
@@ -73,27 +74,27 @@ class Writer {
         return Promisify(() => this.collection.insertOne(org), cb);
     }
 
-    roleAdded(e, cb) {
+    roleDefinitionAdded(e, cb) {
         const orgId = e.payload.orgId;
-        const role = e.payload.role;
-        role._id = role.roleId;
-        role.orgId = orgId;
-        role._type = docTypes.role;
-        return Promisify(() => this.collection.insertOne(role), cb);
+        const roleDef = e.payload.roleDef;
+        roleDef._id = roleDef.roleDefId;
+        roleDef.orgId = orgId;
+        roleDef._type = docTypes.roleDef;
+        return Promisify(() => this.collection.insertOne(roleDef), cb);
     }
 
-    roleChanged(e, cb) {
+    roleDefinitionChanged(e, cb) {
         const orgId = e.payload.orgId;
-        const role = e.payload.role;
-        const name = role.name;
-        const permissions = role.permissions;
-        return Promisify(() => this.collection.updateOne({ _id: role.roleId, orgId, _type: docTypes.role }, { $set: { name, permissions } }), cb);
+        const roleDef = e.payload.roleDef;
+        const name = roleDef.name;
+        const permissions = roleDef.permissions;
+        return Promisify(() => this.collection.updateOne({ _id: roleDef.roleDefId, orgId, _type: docTypes.roleDef }, { $set: { name, permissions } }), cb);
     }
 
-    roleRemoved(e, cb) {
+    roleDefinitionRemoved(e, cb) {
         const orgId = e.payload.orgId;
-        const roleId = e.payload.roleId;
-        return Promisify(() => this.collection.deleteOne({ _id: roleId, orgId }), cb);
+        const roleDefId = e.payload.roleDefId;
+        return Promisify(() => this.collection.deleteOne({ _id: roleDefId, orgId, _type: docTypes.roleDef }), cb);
     }
 
     userAdded(e, cb) {
@@ -115,7 +116,7 @@ class Writer {
         const userId = e.payload.userId;
         const roles = e.payload.roles;
         const rolesField = `roles.${orgId}`;
-        return Promisify(() => this.collection.updateOne({ _id: userId, organizations: orgId }, { $pullAll: { [rolesField]: roles } }), cb);
+        return Promisify(() => this.collection.updateOne({ _id: userId, organizations: orgId }, { $pull: { [rolesField]: { roleDefId: { $in: roles } } } }), cb);
     }
 
     userRemoved(e, cb) {
