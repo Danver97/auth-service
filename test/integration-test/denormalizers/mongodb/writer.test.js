@@ -49,7 +49,8 @@ describe('writer unit test', function () {
 
     beforeEach(() => {
         org = utils.organization(null, null, [], []);
-        role = utils.role();
+        roleDef = utils.roleDef();
+        roleInstance = utils.roleInstance(roleDef, { orgId: org.orgId });
         user = utils.user();
         return collection.deleteMany({});
     });
@@ -65,47 +66,49 @@ describe('writer unit test', function () {
         assert.deepStrictEqual(doc, toJSON(org));
     });
 
-    it('check if roleAdded works', async function () {
+    it('check if roleDefinitionAdded works', async function () {
         // Preset
         await collection.insertOne(toJSON(org));
 
         // Update done
-        const e = new Event(org.orgId, 2, 'roleAdded', { orgId: org.orgId, role: toJSON(role) });
-        await writer.roleAdded(e);
+        const e = new Event(org.orgId, 2, 'roleDefinitionAdded', { orgId: org.orgId, roleDef: toJSON(roleDef) });
+        await writer.roleDefinitionAdded(e);
 
         // Assertions
-        const doc = await collection.findOne({ _id: role.roleId });
-        role._type = 'role';
-        assert.deepStrictEqual(doc, toJSON(role));
+        const doc = await collection.findOne({ _id: roleDef.roleDefId });
+        roleDef._type = 'roleDef';
+        assert.deepStrictEqual(doc, toJSON(roleDef));
     });
 
-    it('check if roleChanged works', async function () {
+    it('check if roleDefinitionChanged works', async function () {
         // Preset
         await collection.insertOne(toJSON(org));
-        await collection.insertOne(toJSON(role));
+        await collection.insertOne(toJSON(roleDef));
 
         // Update done
-        role.name = 'name2';
-        role.permissions = [utils.permission('auth-service', 'removeRole', 'description')];
-        const e = new Event(org.orgId, 3, 'roleChanged', { orgId: org.orgId, role: toJSON(role) });
-        await writer.roleChanged(e);
+        roleDef.name = 'name2';
+        roleDef.permissions = [utils.permissionDef('reservation-service', 'acceptReservation', 'Allows to accept reservations', {
+            orgId: { name: 'OrganizationId', description: 'The id of the organization the user belongs to', required: true }
+        })];
+        const e = new Event(org.orgId, 3, 'roleDefinitionChanged', { orgId: org.orgId, roleDef: toJSON(roleDef) });
+        await writer.roleDefinitionChanged(e);
 
         // Assertions
-        const doc = await collection.findOne({ _id: role.roleId });
-        assert.deepStrictEqual(doc, toJSON(role));
+        const doc = await collection.findOne({ _id: roleDef.roleDefId });
+        assert.deepStrictEqual(doc, toJSON(roleDef));
     });
 
-    it('check if roleRemoved works', async function () {
+    it('check if roleDefinitionRemoved works', async function () {
         // Preset
         await collection.insertOne(toJSON(org));
-        await collection.insertOne(toJSON(role));
+        await collection.insertOne(toJSON(roleDef));
 
         // Update done
-        const e = new Event(org.orgId, 3, 'roleRemoved', { orgId: org.orgId, roleId: role.roleId });
-        await writer.roleRemoved(e);
+        const e = new Event(org.orgId, 3, 'roleDefinitionRemoved', { orgId: org.orgId, roleDefId: roleDef.roleDefId });
+        await writer.roleDefinitionRemoved(e);
 
         // Assertions
-        const doc = await collection.findOne({ _id: role.roleId });
+        const doc = await collection.findOne({ _id: roleDef.roleId });
         assert.deepStrictEqual(doc, null);
     });
 
@@ -113,7 +116,7 @@ describe('writer unit test', function () {
         // Preset
         await collection.insertOne(toJSON(user));
         await collection.insertOne(toJSON(org));
-        await collection.insertOne(toJSON(role));
+        await collection.insertOne(toJSON(roleDef));
 
         // Update to do
         user.organizations = [org.orgId];
@@ -132,13 +135,13 @@ describe('writer unit test', function () {
         user.organizations = [org.orgId];
         await collection.insertOne(toJSON(user));
         await collection.insertOne(toJSON(org));
-        await collection.insertOne(toJSON(role));
+        await collection.insertOne(toJSON(roleDef));
 
         // Update to do
-        user.roles = { [org.orgId]: [role.roleId] };
+        user.roles = { [org.orgId]: [roleInstance] };
 
         // Update done
-        const e = new Event(org.orgId, 5, 'rolesAssignedToUser', { orgId: org.orgId, userId: user.uniqueId, roles: [role.roleId] });
+        const e = new Event(org.orgId, 5, 'rolesAssignedToUser', { orgId: org.orgId, userId: user.uniqueId, roles: toJSON([roleInstance]) });
         await writer.rolesAssignedToUser(e);
 
         // Assertions
@@ -149,16 +152,16 @@ describe('writer unit test', function () {
     it('check if rolesRemovedFromUser works', async function () {
         // Preset
         user.organizations = [org.orgId];
-        user.roles = { [org.orgId]: [role.roleId] };
+        user.roles = { [org.orgId]: [roleInstance] };
         await collection.insertOne(toJSON(user));
         await collection.insertOne(toJSON(org));
-        await collection.insertOne(toJSON(role));
+        await collection.insertOne(toJSON(roleDef));
 
         // Update to do
         user.roles[org.orgId] = [];
 
         // Update done
-        const e = new Event(org.orgId, 6, 'rolesRemovedFromUser', { orgId: org.orgId, userId: user.uniqueId, roles: [role.roleId] });
+        const e = new Event(org.orgId, 6, 'rolesRemovedFromUser', { orgId: org.orgId, userId: user.uniqueId, roles: [toJSON(roleInstance).roleDefId] });
         await writer.rolesRemovedFromUser(e);
 
         // Assertions
@@ -169,10 +172,10 @@ describe('writer unit test', function () {
     it('check if userRemoved works', async function () {
         // Preset
         user.organizations = [org.orgId];
-        user.roles = { [org.orgId]: [role.roleId] };
+        user.roles = { [org.orgId]: [roleDef.roleId] };
         await collection.insertOne(toJSON(user));
         await collection.insertOne(toJSON(org));
-        await collection.insertOne(toJSON(role));
+        await collection.insertOne(toJSON(roleDef));
 
         // Update to do
         user.organizations = [];

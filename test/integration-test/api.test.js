@@ -23,6 +23,9 @@ const checkPerm = require('../../infrastructure/api/permissionChecker');
 const User = require('../../domain/models/user.class');
 const Permission = require('../../domain/models/permission.class');
 const Role = require('../../domain/models/role.class');
+const PermissionDefinition = require('../../domain/models/permissionDef.class');
+const RoleDefinition = require('../../domain/models/roleDef.class');
+const RoleInstance = require('../../domain/models/roleInstance.class');
 const Organization = require('../../domain/models/organization.class');
 // #endregion
 
@@ -91,13 +94,17 @@ async function setUpQuery(mongoOptions) {
     queryMgr = await queryManagerFunc(mongoOptions);
 }
 
-async function setUpData(orgName, role, user) {
+async function setUpData(orgName, roleDefOptions = {}, user) {
     await userMgr.login(user);
     const org = await orgMgr.organizationCreated(orgName);
-    await orgMgr.roleAdded(org.orgId, role);
+    if (!roleDefOptions.roleId)
+        roleDefOptions.orgId = org.orgId;
+    const roleDef = new RoleDefinition(roleDefOptions);
+    await orgMgr.roleDefinitionAdded(org.orgId, roleDef);
     await orgMgr.userAdded(org.orgId, user.uniqueId);
-    await orgMgr.rolesAssignedToUser(org.orgId, user.uniqueId, [role.roleId]);
-    return org.orgId;
+    let roleInstance = new RoleInstance({ roleDef, paramValues: { orgId: org.orgId } });
+    await orgMgr.rolesAssignedToUser(org.orgId, user.uniqueId, [roleInstance.toJSON()]);
+    return { orgId: org.orgId, roleDef, roleInstance };
 }
 
 async function cleanUpData(orgId, userId) {
@@ -151,6 +158,36 @@ describe('Api unit test', function () {
     const perm2 = new Permission('auth-service', 'removeRole');
     let role1 = new Role('waiter1', [perm1]);
     let role2 = new Role('waiter2', [perm2]);
+    const permDef1 = new PermissionDefinition({
+        scope: 'reservation-service', name: 'acceptReservation', parameters: {
+            orgId: { name: 'OrganizationId', description: 'The id of the organization the user belongs to', required: true },
+            restId: { name: 'RestaurantId', description: 'The id of the restaurant', required: false },
+        }
+    });
+    const permDef2 = new PermissionDefinition({
+        scope: 'reservation-service', name: 'listReservation', parameters: {
+            orgId: { name: 'OrganizationId', description: 'The id of the organization the user belongs to', required: true },
+            restId: { name: 'RestaurantId', description: 'The id of the restaurant', required: false },
+        }
+    });
+    const roleDefOptions = {
+        name: 'Waiter',
+        description: 'Waiter of the restaurant',
+        permissions: [permDef1],
+        paramMapping: {
+            'orgId': {
+                name: 'OrganizationId',
+                description: 'The id of the organization the user belongs to',
+                mapping: [`${permDef1.scope}:${permDef1.name}:orgId`],
+            },
+            'restId': {
+                mapping: `${permDef1.scope}:${permDef1.name}:restId`,
+            },
+        }
+    };
+    let roleDefOptions2;
+    let roleDef;
+    let roleInstance;
     const orgName1 = 'Risto1';
     const orgName2 = 'Risto2';
     let orgId1 = ':orgId';
@@ -196,8 +233,27 @@ describe('Api unit test', function () {
             lastname: 'Doe',
             email: 'john.doe@gmail.com',
         });
+        roleDefOptions2 = {
+            name: 'Waiter',
+            description: 'Waiter of the restaurant',
+            permissions: [permDef1],
+            paramMapping: {
+                'orgId': {
+                    name: 'OrganizationId',
+                    description: 'The id of the organization the user belongs to',
+                    mapping: [`${permDef1.scope}:${permDef1.name}:orgId`, `${permDef2.scope}:${permDef2.name}:orgId`],
+                },
+                'restId': {
+                    mapping: [`${permDef1.scope}:${permDef1.name}:restId`, `${permDef2.scope}:${permDef2.name}:restId`],
+                },
+            }
+        }
 
-        orgId1 = await setUpData(orgName1, role1, user1);
+        const results = await setUpData(orgName1, roleDefOptions, user1);
+        orgId1 = results.orgId;
+        roleDef = results.roleDef;
+        roleInstance = results.roleInstance;
+
         authorizedUser = new User({
             accountId: 14546434341332,
             accountType: 'Google',
@@ -231,9 +287,7 @@ describe('Api unit test', function () {
             .expect(200);
     });
 
-    it.only(`GET\t/organizations/${orgId1}`, async function () {
-        // await req.get(`/organizations/blablabla`)
-        //     .expect(401);
+    it(`GET\t/organizations/${orgId1}`, async function () {
         await req.get(`/organizations/blablabla`)
             .expect(404);
         await req.get(`/organizations/${orgId1}`)
@@ -266,14 +320,15 @@ describe('Api unit test', function () {
             .expect(404);
         await req.get(`/organizations/${orgId1}/roles`)
             .expect(res => {
-                role1._id = role1.roleId;
-                role1.orgId = orgId1;
-                role1._type = 'role';
+                const expectRoleDef = toJSON(roleDef);
+                expectRoleDef._id = expectRoleDef.roleDefId;
+                expectRoleDef.orgId = orgId1;
+                expectRoleDef._type = 'roleDef';
                 const expected = [{
-                    data: role1,
+                    data: expectRoleDef,
                     links: {
                         organization: `/organizations/${orgId1}`,
-                        self: `/organizations/${orgId1}/roles/${role1.roleId}`,
+                        self: `/organizations/${orgId1}/roles/${expectRoleDef.roleDefId}`,
                     }
                 }]
                 assert.ok(Array.isArray(res.body));
@@ -286,18 +341,19 @@ describe('Api unit test', function () {
         await req.post(`/organizations/blablabla/roles`)
             .expect(400);
         await req.post(`/organizations/blablabla/roles`)
-            .send(role2)
+            .send(roleDefOptions2)
             .expect(404);
         await req.post(`/organizations/${orgId1}/roles`)
             .set('Content-Type', 'application/json')
-            .send(role2)
+            .send(roleDefOptions2)
             .expect(res => {
-                role2.roleId = res.body.data.roleId;
+                roleDefOptions2.roleDefId = res.body.data.roleDefId;
+                roleDefOptions2.orgId = orgId1;
                 const expected = {
-                    data: role2,
+                    data: roleDefOptions2,
                     links: {
                         organization: `/organizations/${orgId1}`,
-                        self: `/organizations/${orgId1}/roles/${role2.roleId}`,
+                        self: `/organizations/${orgId1}/roles/${roleDefOptions2.roleDefId}`,
                     }
                 };
                 assert.deepStrictEqual(res.body, toJSON(expected));
@@ -305,21 +361,22 @@ describe('Api unit test', function () {
             .expect(200);
     });
 
-    it(`GET\t/organizations/${orgId1}/roles/${role1.roleId}`, async function () {
-        await req.get(`/organizations/blablabla/roles/${role1.roleId}`)
+    it(`GET\t/organizations/${orgId1}/roles/:roleDefId`, async function () {
+        await req.get(`/organizations/blablabla/roles/${roleDef.roleDefId}`)
             .expect(404);
         await req.get(`/organizations/${orgId1}/roles/blablabla`)
             .expect(404);
-        await req.get(`/organizations/${orgId1}/roles/${role1.roleId}`)
+        await req.get(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
             .expect(res => {
-                role1._id = role1.roleId;
-                role1.orgId = orgId1;
-                role1._type = 'role';
+                const expectedRoleDef = toJSON(roleDef);
+                expectedRoleDef._id = expectedRoleDef.roleDefId;
+                expectedRoleDef.orgId = orgId1;
+                expectedRoleDef._type = 'roleDef';
                 const expected = {
-                    data: role1,
+                    data: expectedRoleDef,
                     links: {
                         organization: `/organizations/${orgId1}`,
-                        self: `/organizations/${orgId1}/roles/${role1.roleId}`,
+                        self: `/organizations/${orgId1}/roles/${expectedRoleDef.roleDefId}`,
                     }
                 }
                 assert.deepStrictEqual(res.body, toJSON(expected));
@@ -327,44 +384,38 @@ describe('Api unit test', function () {
             .expect(200);
     });
 
-    it(`PUT\t/organizations/${orgId1}/roles/${role1.roleId}`, async function () {
-        await req.put(`/organizations/${orgId1}/roles/${role1.roleId}`)
+    it(`PUT\t/organizations/${orgId1}/roles/:roleDefId`, async function () {
+        await req.put(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
             .expect(400);
-        await req.put(`/organizations/blablabla/roles/${role1.roleId}`)
+        await req.put(`/organizations/blablabla/roles/${roleDef.roleDefId}`)
             .set('Content-Type', 'application/json')
-            .send({ name: 'newName', permissions: [perm2] })
+            .send({ name: 'newName', permissions: [permDef2] })
             .expect(404);
         await req.put(`/organizations/${orgId1}/roles/blablabla`)
             .set('Content-Type', 'application/json')
-            .send({ name: 'newName', permissions: [perm2] })
+            .send({ name: 'newName', permissions: [permDef2] })
             .expect(404);
-        await req.put(`/organizations/${orgId1}/roles/${role1.roleId}`)
+        await req.put(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
             .set('Content-Type', 'application/json')
-            .send({ name: 'newName', permissions: [perm2] }) // Something here!
-            /* .expect(res => {
-                role1._id = role1.roleId;
-                role1.orgId = orgId1;
-                role1.name = 'newName';
-                role1.permissions = [perm2];
-                role1._type = 'role';
-                const expected = {
-                    data: role1,
-                    links: {
-                        organization: `/organizations/${orgId1}`,
-                        self: `/organizations/${orgId1}/roles/${role1.roleId}`,
-                    }
-                }
-                assert.deepStrictEqual(res.body, toJSON(expected));
-            }) */
+            .send({ name: 'newName', paramMapping: {
+                'orgId': {
+                    name: 'OrganizationId',
+                    description: 'The id of the organization the user belongs to',
+                    mapping: [`${permDef1.scope}:${permDef1.name}:orgId`, `${permDef2.scope}:${permDef2.name}:orgId`],
+                },
+                'restId': {
+                    mapping: `${permDef1.scope}:${permDef1.name}:restId`,
+                },
+            }, permissions: [permDef2] }) // Something here!
             .expect(200);
     });
 
-    it(`DELETE\t/organizations/${orgId1}/roles/${role1.roleId}`, async function () {
-        await req.delete(`/organizations/blablabla/roles/${role1.roleId}`)
+    it(`DELETE\t/organizations/${orgId1}/roles/:roleDefId`, async function () {
+        await req.delete(`/organizations/blablabla/roles/${roleDef.roleDefId}`)
             .expect(404);
         await req.delete(`/organizations/${orgId1}/roles/blablabla`)
             .expect(404);
-        await req.delete(`/organizations/${orgId1}/roles/${role1.roleId}`)
+        await req.delete(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
             .expect(200);
     });
 
@@ -379,7 +430,7 @@ describe('Api unit test', function () {
                 userExpected.fullname = user1.fullname;
                 userExpected._type = 'user';
                 userExpected.organizations = [orgId1];
-                userExpected.roles = { [orgId1]: [role1.roleId] };
+                userExpected.roles = { [orgId1]: [roleInstance] };
                 const expected = [{
                     data: userExpected,
                     links: {
@@ -387,7 +438,7 @@ describe('Api unit test', function () {
                     }
                 }];
                 assert.ok(Array.isArray(res.body));
-                assert.deepStrictEqual(res.body, expected);
+                assert.deepStrictEqual(res.body, toJSON(expected));
             })
             .expect(200);
     });
@@ -423,14 +474,12 @@ describe('Api unit test', function () {
             .expect(404);
         await req.get(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
             .expect(res => {
-                role1._id = role1.roleId;
-                role1.orgId = orgId1;
-                role1._type = 'role';
+                roleInstance.orgId = orgId1;
                 const expected = [{
-                    data: role1,
+                    data: roleInstance,
                     links: {
                         organization: `/organizations/${orgId1}`,
-                        self: `/organizations/${orgId1}/roles/${role1.roleId}`,
+                        self: `/organizations/${orgId1}/roles/${roleInstance.id}`,
                     }
                 }];
                 assert.deepStrictEqual(res.body, toJSON(expected));
@@ -442,33 +491,43 @@ describe('Api unit test', function () {
 
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
             .expect(400);
+        await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .send({ roles: ['string'] })
+            .expect(400);
+        await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .send({ roles: [{}] })
+            .expect(400);
         await req.post(`/organizations/blablabla/roles/${user1.uniqueId}/roles`)
-            .send({ rolesIds: [role2.roleId] })
+            .send({ roles: [roleInstance.toJSON()] })
             .expect(404);
         await req.post(`/organizations/${orgId1}/users/blablabla/roles`)
-            .send({ rolesIds: [role2.roleId] })
+            .send({ roles: [roleInstance.toJSON()] })
             .expect(404);
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
-            .send({ rolesIds: [role2.roleId] })
-            .expect(404);
-        
+            .send({ roles: [{ roleDefId: 'notExistent' }] })
+            .expect(400);
+        await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .send({ roles: [roleInstance.toJSON()] })
+            .expect(200);
+
         // Preset
-        await orgMgr.roleAdded(orgId1, role2);
+        roleDefOptions2.orgId = orgId1;
+        const roleDef2 = new RoleDefinition(roleDefOptions2)
+        await orgMgr.roleDefinitionAdded(orgId1, roleDef2);
+        const roleInstance2 = new RoleInstance({ roleDef: roleDef2, paramValues: { orgId: orgId1 } });
         // Actual request
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
-            .send({ rolesIds: [role2.roleId] })
+            .send({ roles: [roleInstance2.toJSON()] })
             .expect(200);
     });
 
-    it(`DELETE\t/organizations/${orgId1}/users/${user1.uniqueId}/roles/${role1.roleId}`, async function () {
-        await req.delete(`/organizations/blablabla/users/${user1.uniqueId}/roles/${role1.roleId}`)
+    it(`DELETE\t/organizations/${orgId1}/users/${user1.uniqueId}/roles/:roleDefId`, async function () {
+        await req.delete(`/organizations/blablabla/users/${user1.uniqueId}/roles/${roleDef.roleDefId}`)
             .expect(404);
         await req.delete(`/organizations/${orgId1}/users/${user1.uniqueId}/roles/blablabla`)
             .expect(404);
-        await req.delete(`/organizations/${orgId1}/users/${user1.uniqueId}/roles/${role2.roleId}`)
-            .expect(404);
         // Actual request
-        await req.delete(`/organizations/${orgId1}/users/${user1.uniqueId}/roles/${role1.roleId}`)
+        await req.delete(`/organizations/${orgId1}/users/${user1.uniqueId}/roles/${roleDef.roleDefId}`)
             .expect(200);
     });
 

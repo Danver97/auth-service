@@ -6,8 +6,9 @@ const userEvents = require('../../lib/user-events');
 const repoFunc = require('../../infrastructure/repository/repositoryManager');
 const User = require('../../domain/models/user.class');
 const Organization = require('../../domain/models/organization.class');
-const Permission = require('../../domain/models/permission.class');
-const Role = require('../../domain/models/role.class');
+const PermissionDefinition = require('../../domain/models/permissionDef.class');
+const RoleDefinition = require('../../domain/models/roleDef.class');
+const RoleInstance = require('../../domain/models/roleInstance.class');
 const RepositoryError = require('../../infrastructure/repository/repo.error');
 
 const eventStoreType = (!process.env.TEST || process.env.TEST === 'unit') ? 'testdb' : 'dynamodb';
@@ -21,9 +22,35 @@ describe('Repository Manager unit test', function () {
     this.slow(5000);
     this.timeout(30000);
     let org;
-    const perm = new Permission('auth-service', 'addRole');
-    const perm2 = new Permission('auth-service', 'removeRole');
-    const role = new Role('waiter', [perm]);
+    let roleInstance;
+    const permDef1 = new PermissionDefinition({
+        scope: 'reservation-service', name: 'acceptReservation', parameters: {
+            orgId: { name: 'OrganizationId', description: 'The id of the organization the user belongs to', required: true },
+            restId: { name: 'RestaurantId', description: 'The id of the restaurant', required: false },
+        }
+    });
+    const permDef2 = new PermissionDefinition({
+        scope: 'reservation-service', name: 'listReservation', parameters: {
+            orgId: { name: 'OrganizationId', description: 'The id of the organization the user belongs to', required: true },
+            restId: { name: 'RestaurantId', description: 'The id of the restaurant', required: false },
+        }
+    });
+    const roleDef = new RoleDefinition({
+        roleDefId: 'Waiter',
+        name: 'Waiter',
+        description: 'Waiter of the restaurant',
+        permissions: [permDef1],
+        paramMapping: {
+            'orgId': {
+                name: 'OrganizationId',
+                description: 'The id of the organization the user belongs to',
+                mapping: [`${permDef1.scope}:${permDef1.name}:orgId`],
+            },
+            'restId': {
+                mapping: `${permDef1.scope}:${permDef1.name}:restId`,
+            },
+        }
+    });
     const userId = 'userId1';
     const userOptions = {
         accountId: 14546434341331,
@@ -36,6 +63,7 @@ describe('Repository Manager unit test', function () {
 
     beforeEach(async () => {
         org = new Organization('Risto');
+        roleInstance = new RoleInstance({ roleDef, paramValues: { orgId: org.orgId } });
         if (typeof repo.db.reset === 'function')
             await repo.db.reset();
         else {
@@ -60,64 +88,71 @@ describe('Repository Manager unit test', function () {
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
+        const lastEvent = events[events.length-1];
         assert.strictEqual(lastEvent.message, orgEvents.organizationCreated);
         assert.deepStrictEqual(lastEvent.payload, org.toJSON());
     });
 
-    it('check roleAdded works', async function () {
+    it('check roleDefinitionAdded works', async function () {
         // Setup
         await repo.organizationCreated(org);
         org._revisionId = 1;
 
         // Update
-        org.addRole(role);
-        await repo.roleAdded(org, role);
+        org.addRoleDefinition(roleDef);
+        await repo.roleDefinitionAdded(org, roleDef);
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
-        assert.strictEqual(lastEvent.message, orgEvents.roleAdded);
-        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, role }));
+        const lastEvent = events[events.length-1];
+        assert.strictEqual(lastEvent.message, orgEvents.roleDefinitionAdded);
+        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, roleDef }));
     });
 
-    it('check roleChanged works', async function () {
+    it('check roleDefinitionChanged works', async function () {
         // Setup
         await repo.organizationCreated(org);
         org._revisionId = 1;
-        org.addRole(role);
-        await repo.roleAdded(org, role);
+        org.addRoleDefinition(roleDef);
+        await repo.roleDefinitionAdded(org, roleDef);
         org._revisionId++;
 
         // Update
-        role.changeName('name2');
-        role.changePermissions([perm2]);
-        await repo.roleChanged(org, role);
+        roleDef.changeName('name2');
+        roleDef.changeParamsMapping({
+            'orgId': {
+                name: 'OrganizationId',
+                description: 'The id of the organization the user belongs to',
+                mapping: [`${permDef1.scope}:${permDef1.name}:orgId`, `${permDef2.scope}:${permDef2.name}:orgId`],
+            }
+        });
+        roleDef.changePermissions([permDef2]);
+        await repo.roleDefinitionChanged(org, roleDef);
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
-        assert.strictEqual(lastEvent.message, orgEvents.roleChanged);
-        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, role }));
+        const lastEvent = events[events.length-1];
+        assert.strictEqual(lastEvent.message, orgEvents.roleDefinitionChanged);
+        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, roleDef }));
     });
 
-    it('check roleRemoved works', async function () {
+    it('check roleDefinitionRemoved works', async function () {
         // Setup
         await repo.organizationCreated(org);
         org._revisionId = 1;
-        org.addRole(role);
-        await repo.roleAdded(org, role);
+        org.addRoleDefinition(roleDef);
+        await repo.roleDefinitionAdded(org, roleDef);
         org._revisionId++;
 
         // Update
-        org.removeRole(role.roleId);
-        await repo.roleRemoved(org, role.roleId);
+        org.removeRoleDefinition(roleDef.roleDefId);
+        await repo.roleDefinitionRemoved(org, roleDef.roleDefId);
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
-        assert.strictEqual(lastEvent.message, orgEvents.roleRemoved);
-        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, roleId: role.roleId }));
+        const lastEvent = events[events.length-1];
+        assert.strictEqual(lastEvent.message, orgEvents.roleDefinitionRemoved);
+        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, roleId: roleDef.roleDefId }));
     });
 
     it('check userAdded works', async function () {
@@ -131,7 +166,7 @@ describe('Repository Manager unit test', function () {
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
+        const lastEvent = events[events.length-1];
         assert.strictEqual(lastEvent.message, orgEvents.userAdded);
         assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, userId }));
     });
@@ -140,13 +175,13 @@ describe('Repository Manager unit test', function () {
         // Setup
         await repo.organizationCreated(org);
         org._revisionId = 1;
-        org.addRole(role);
-        await repo.roleAdded(org, role);
+        org.addRoleDefinition(roleDef);
+        await repo.roleDefinitionAdded(org, roleDef);
         org._revisionId++;
         org.addUser(userId);
         await repo.userAdded(org, userId);
         org._revisionId++;
-        const roles = [role.roleId]
+        const roles = [roleInstance]
 
         // Update
         org.assignRolesToUser(userId, roles);
@@ -154,7 +189,7 @@ describe('Repository Manager unit test', function () {
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
+        const lastEvent = events[events.length-1];
         assert.strictEqual(lastEvent.message, orgEvents.rolesAssignedToUser);
         assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, userId, roles }));
     });
@@ -163,26 +198,27 @@ describe('Repository Manager unit test', function () {
         // Setup
         await repo.organizationCreated(org);
         org._revisionId = 1;
-        org.addRole(role);
-        await repo.roleAdded(org, role);
+        org.addRoleDefinition(roleDef);
+        await repo.roleDefinitionAdded(org, roleDef);
         org._revisionId++;
         org.addUser(userId);
         await repo.userAdded(org, userId);
         org._revisionId++;
-        const roles = [role.roleId]
+        const roles = [roleInstance];
         org.assignRolesToUser(userId, roles);
         await repo.rolesAssignedToUser(org, userId, roles);
         org._revisionId++;
 
         // Update
-        org.removeRolesFromUser(userId, roles);
-        await repo.rolesRemovedFromUser(org, userId, roles);
+        const roleIds = [roleInstance.id];
+        org.removeRolesFromUser(userId, roleIds);
+        await repo.rolesRemovedFromUser(org, userId, roleIds);
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
+        const lastEvent = events[events.length-1];
         assert.strictEqual(lastEvent.message, orgEvents.rolesRemovedFromUser);
-        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, userId, roles }));
+        assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, userId, roles: roleIds }));
     });
 
     it('check userRemoved works', async function () {
@@ -199,7 +235,7 @@ describe('Repository Manager unit test', function () {
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
+        const lastEvent = events[events.length-1];
         assert.strictEqual(lastEvent.message, orgEvents.userRemoved);
         assert.deepStrictEqual(lastEvent.payload, toJSON({ orgId: org.orgId, userId }));
     });
@@ -215,7 +251,7 @@ describe('Repository Manager unit test', function () {
 
         // Assertions
         const events = await repo.db.getStream(org.orgId);
-        const lastEvent = events[events.length - 1];
+        const lastEvent = events[events.length-1];
         assert.strictEqual(lastEvent.message, orgEvents.organizationDeleted);
         assert.deepStrictEqual(lastEvent.payload, { orgId: org.orgId, status: org.status });
     });
@@ -226,22 +262,23 @@ describe('Repository Manager unit test', function () {
         // Setup
         await repo.organizationCreated(org);
         org._revisionId = 1;
-        org.addRole(role);
-        await repo.roleAdded(org, role);
+        org.addRoleDefinition(roleDef);
+        await repo.roleDefinitionAdded(org, roleDef);
         org._revisionId++;
-        role.changeName('name2');
-        role.changePermissions([perm2]);
-        await repo.roleChanged(org, role);
+        roleDef.changeName('name2');
+        roleDef.changePermissions([permDef2]);
+        await repo.roleDefinitionChanged(org, roleDef);
         org._revisionId++;
         org.addUser(userId);
         await repo.userAdded(org, userId);
         org._revisionId++;
-        const roles = [role.roleId]
+        const roles = [roleInstance];
         org.assignRolesToUser(userId, roles);
         await repo.rolesAssignedToUser(org, userId, roles);
         org._revisionId++;
-        org.removeRolesFromUser(userId, roles);
-        await repo.rolesRemovedFromUser(org, userId, roles);
+        const roleIds = [roleInstance.id];
+        org.removeRolesFromUser(userId, roleIds);
+        await repo.rolesRemovedFromUser(org, userId, roleIds);
         org._revisionId++;
         org.removeUser(userId);
         await repo.userRemoved(org, userId);
@@ -249,7 +286,7 @@ describe('Repository Manager unit test', function () {
         org.delete();
         await repo.organizationDeleted(org);
         org._revisionId++;
-
+        
         const org2 = await repo.getOrganization(org.orgId);
         assert.deepStrictEqual(org2, org);
     });
@@ -257,10 +294,10 @@ describe('Repository Manager unit test', function () {
     it('check userCreated works', async function () {
         // Update
         await repo.userCreated(user);
-
+        
         // Assertions
         const events = await repo.db.getStream(user.uniqueId);
-        const lastEvent = events[events.length - 1];
+        const lastEvent = events[events.length-1];
         assert.strictEqual(lastEvent.message, userEvents.userCreated);
         assert.deepStrictEqual(lastEvent.payload, toJSON(user));
     });
@@ -270,7 +307,7 @@ describe('Repository Manager unit test', function () {
 
         // Setup
         await repo.userCreated(user);
-
+        
         // Assertions
         const userSaved = await repo.getUser(user.uniqueId);
         user._revisionId = 1;
