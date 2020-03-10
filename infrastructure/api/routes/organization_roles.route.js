@@ -1,14 +1,8 @@
 const express = require('express');
 const apiutils = require('../utils');
 const presentation = require('../presentation');
-const Role = require('../../../domain/models/role.class');
-const Permission = require('../../../domain/models/permission.class');
-const RoleError = require('../../../domain/errors/role.error');
-const PermissionError = require('../../../domain/errors/permission.error');
-const OrganizationError = require('../../../domain/errors/organization.error');
-const RepositoryError = require('../../repository/repo.error');
-const QueryError = require('../../query/query.error');
-const OrganizationManagerError = require('../../../domain/errors/organizationManager.error');
+const PermissionDefinition = require('../../../domain/models/permissionDef.class');
+const RoleDefinition = require('../../../domain/models/roleDef.class');
 const router = express.Router();
 
 let orgMgr;
@@ -28,7 +22,7 @@ router.get('/', async (req, res, next) => {
         next(error);
         return;
     }
-    res.json(roles.map(r => presentation.roleJSON(r)));
+    res.json(roles.map(r => presentation.roleDefJSON(r)));
 });
 
 router.post('/', async (req, res, next) => {
@@ -42,16 +36,17 @@ router.post('/', async (req, res, next) => {
         return;
     }
     
-    let role;
+    let roleDef;
     try {
-        const permissions = req.body.permissions.map(p => Permission.fromObject(p));
-        role = new Role(req.body.name, permissions);
-        await orgMgr.roleAdded(orgId, role);
+        req.body.orgId = orgId;
+        req.body.permissions = req.body.permissions.map(p => PermissionDefinition.fromObject(p));
+        roleDef = new RoleDefinition(req.body);
+        await orgMgr.roleDefinitionAdded(orgId, roleDef);
     } catch (error) {
         next(error);
         return;
     }
-    return res.json(presentation.roleJSON(role, orgId));
+    return res.json(presentation.roleDefJSON(roleDef, orgId));
 });
 
 router.use('/:roleId', checkParam('roleId'));
@@ -62,12 +57,12 @@ router.get('/:roleId', async (req, res, next) => {
 
     let role;
     try {
-        role = await queryMgr.getRole(orgId, roleId);
+        role = await queryMgr.getRoleDefinition(orgId, roleId);
     } catch (error) {
         next(error);
         return;
     }
-    res.json(presentation.roleJSON(role));
+    res.json(presentation.roleDefJSON(role));
 });
 
 router.put('/:roleId', async (req, res, next) => {
@@ -77,8 +72,8 @@ router.put('/:roleId', async (req, res, next) => {
 
     try {
         if (roleUpdated.permissions)
-            roleUpdated.permissions = roleUpdated.permissions.map(p => Permission.fromObject(p));
-        await orgMgr.roleChanged(orgId, roleId, roleUpdated);
+            roleUpdated.permissions = roleUpdated.permissions.map(p => PermissionDefinition.fromObject(p));
+        await orgMgr.roleDefinitionChanged(orgId, roleId, roleUpdated);
     } catch (error) {
         next(error);
         return;
@@ -91,7 +86,7 @@ router.delete('/:roleId', async (req, res, next) => {
     const roleId = req.params.roleId;
 
     try {
-        await orgMgr.roleRemoved(orgId, roleId);
+        await orgMgr.roleDefinitionRemoved(orgId, roleId);
     } catch (error) {
         next(error);
         return;

@@ -71,6 +71,9 @@ function errorHandler(err, req, res, next) {
             case OrganizationManagerError.noRoleChangesErrorCode:
                 apiutils.clientError(res, 'No changes to apply to role', 400);
                 return;
+            case OrganizationManagerError.roleToAssignDoesNotExistsErrorCode:
+                apiutils.clientError(res, 'One of the role assigned does not exist', 400);
+                return;
         }
     }
 

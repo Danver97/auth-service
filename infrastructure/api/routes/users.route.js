@@ -44,7 +44,7 @@ router.get('/users/:userId/roles', async (req, res) => {
         return;
     }
     Object.keys(rolesMap).forEach(k => {
-        rolesMap[k] = rolesMap[k].map(r => presentation.roleJSON(r));
+        rolesMap[k] = rolesMap[k].map(r => presentation.roleDefJSON(r));
     });
     res.json(rolesMap);
 });

@@ -94,7 +94,7 @@ class Organization {
     getRoleDefinition(roleDefId) {
         this._checkIfDeleted();
         if (typeof roleDefId !== 'string')
-            throw OrganizationError.paramError('roleId must be a string');
+            throw OrganizationError.paramError('roleDefId must be a string');
         if (!this._roles[roleDefId])
             throw OrganizationError.roleDoesNotExistError(`role with id ${roleDefId} does not exist`);
         return this._roles[roleDefId];

@@ -1,5 +1,7 @@
 const Organization = require('../models/organization.class');
+const RoleInstance = require('../models/roleInstance.class');
 const RepositoryError = require('../../infrastructure/repository/repo.error');
+const OrganizationError = require('../errors/organization.error');
 const OrganizationManagerError = require('../errors/organizationManager.error');
 
 class OrganizationManager {
@@ -78,6 +80,14 @@ class OrganizationManager {
     rolesAssignedToUser(orgId, userId, roles) {
         return this.optimisticLocking(async () => {
             const org = await this.repo.getOrganization(orgId);
+            try {
+                roles = roles.map(r => new RoleInstance({ roleDef: org.getRoleDefinition(r.roleDefId), paramValues: r.paramValues }));
+            } catch (err) {
+                if (err instanceof OrganizationError && err.code === OrganizationError.roleDoesNotExistErrorCode) {
+                    throw OrganizationManagerError.roleToAssignDoesNotExistsError('One of the roles assigned to the user does not exist');
+                } else
+                    throw err;
+            }
             org.assignRolesToUser(userId, roles);
             await this.repo.rolesAssignedToUser(org, userId, roles);
         });

@@ -1,9 +1,6 @@
 const express = require('express');
 const apiutils = require('../utils');
 const presentation = require('../presentation');
-const OrganizationError = require('../../../domain/errors/organization.error');
-const RepositoryError = require('../../repository/repo.error');
-const QueryError = require('../../query/query.error');
 const router = express.Router();
 
 let orgMgr;
@@ -67,20 +64,26 @@ router.get('/:userId/roles', async (req, res, next) => {
         next(error);
         return;
     }
-    res.json(roles.map(r => presentation.roleJSON(r)));
+    res.json(roles.map(r => presentation.roleInstanceJSON(r)));
 });
 
 router.post('/:userId/roles', async (req, res, next) => {
     const orgId = req.orgId;
     const userId = req.params.userId;
-    const rolesIds = req.body.rolesIds;
-    if (!rolesIds || !Array.isArray(rolesIds) || (rolesIds.length > 0 && typeof rolesIds[0] !== 'string')) {
-        apiutils.clientError(res, 'Body parameter rolesIds must be an array of strings');
+    const roles = req.body.roles;
+    if (!roles || !Array.isArray(roles) || (roles.length > 0 && typeof roles[0] !== 'object')) {
+        apiutils.clientError(res, 'Body parameter \'roles\' must be an array of objects');
         return;
+    }
+    for(let r of roles) {
+        if (!r.roleDefId) {
+            apiutils.clientError(res, 'Each elements of \'roles\' must include the property \'roleDefId\' as string');
+            return;
+        }
     }
     
     try {
-        await orgMgr.rolesAssignedToUser(orgId, userId, rolesIds);
+        await orgMgr.rolesAssignedToUser(orgId, userId, roles);
     } catch (error) {
         next(error);
         return;

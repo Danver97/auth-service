@@ -181,6 +181,21 @@ class RoleDefinition {
         return new Role(this.name, permissions, values);
     }
 
+    toJSON() {
+        const paramMapping = JSON.parse(JSON.stringify(this.paramMapping));
+        Object.keys(paramMapping).forEach(k => {
+            delete paramMapping[k].required;
+        });
+        return {
+            roleDefId: this.roleDefId,
+            orgId: this.orgId,
+            name: this.name,
+            description: this.description,
+            paramMapping,
+            permissions: this.permissions,
+        };
+    }
+
     get id() {
         return this.roleDefId;
     }

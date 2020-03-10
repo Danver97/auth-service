@@ -9,12 +9,22 @@ function orgJSON(org) {
     };
 }
 
-function roleJSON(role, orgId) {
+function roleDefJSON(roleDef, orgId) {
     return {
-        data: role,
+        data: roleDef,
         links: {
-            organization: `/organizations/${role.orgId || orgId}`,
-            self: `/organizations/${role.orgId || orgId}/roles/${role.roleId}`,
+            organization: `/organizations/${roleDef.orgId || orgId}`,
+            self: `/organizations/${roleDef.orgId || orgId}/roles/${roleDef.roleDefId}`,
+        }
+    }
+}
+
+function roleInstanceJSON(roleInstance, orgId) {
+    return {
+        data: roleInstance,
+        links: {
+            organization: `/organizations/${roleInstance.roleDef.orgId || orgId}`,
+            self: `/organizations/${roleInstance.roleDef.orgId || orgId}/roles/${roleInstance.id}`,
         }
     }
 }
@@ -30,6 +40,7 @@ function userJSON(user) {
 
 module.exports = {
     orgJSON,
-    roleJSON,
+    roleDefJSON,
+    roleInstanceJSON,
     userJSON,
 };

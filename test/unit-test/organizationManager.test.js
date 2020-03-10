@@ -128,7 +128,7 @@ describe('Organization Manager unit test', function () {
         await orgMgr.userAdded(orgId, userId);
 
         // Update
-        await orgMgr.rolesAssignedToUser(orgId, userId, [roleInstance]);
+        await orgMgr.rolesAssignedToUser(orgId, userId, [roleInstance.toJSON()]);
 
         // Assertions
         await checkRightEventIsWritten(orgEvents.rolesAssignedToUser);
@@ -139,7 +139,7 @@ describe('Organization Manager unit test', function () {
         orgId = (await orgMgr.organizationCreated(orgName)).orgId;
         await orgMgr.roleDefinitionAdded(orgId, roleDef);
         await orgMgr.userAdded(orgId, userId);
-        await orgMgr.rolesAssignedToUser(orgId, userId, [roleInstance]);
+        await orgMgr.rolesAssignedToUser(orgId, userId, [roleInstance.toJSON()]);
 
         // Update
         await orgMgr.rolesRemovedFromUser(orgId, userId, [roleInstance.id]);

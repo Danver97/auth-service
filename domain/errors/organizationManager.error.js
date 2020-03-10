@@ -9,6 +9,10 @@ const errorsTypes = {
         code: 10,
         name: 'noRoleChangesError',
     },
+    roleToAssignDoesNotExistsError: {
+        code: 11,
+        name: 'roleToAssignDoesNotExistsError',
+    },
 };
 
 class OrganizationManagerError extends ExtendableError {
@@ -25,12 +29,20 @@ class OrganizationManagerError extends ExtendableError {
         return new OrganizationManagerError(msg, OrganizationManagerError.noRoleChangesErrorCode);
     }
 
+    static roleToAssignDoesNotExistsError(msg) {
+        return new OrganizationManagerError(msg, OrganizationManagerError.roleToAssignDoesNotExistsErrorCode);
+    }
+
     static get paramErrorCode() {
         return errorsTypes.paramError.code;
     }
 
     static get noRoleChangesErrorCode() {
         return errorsTypes.noRoleChangesError.code;
+    }
+
+    static get roleToAssignDoesNotExistsErrorCode() {
+        return errorsTypes.roleToAssignDoesNotExistsError.code;
     }
 }
 
