@@ -5,9 +5,8 @@ const orderControlFunc = require('../../../../infrastructure/denormalizers/mongo
 const handlerFunc = require('../../../../infrastructure/denormalizers/mongodb/handler');
 
 const ordCtrlDB = process.env.TEST === 'integration' ? 'dynamodb' : 'testdb';
-const endpoint = process.env.CLOUD === 'aws' ? undefined : 'http://localhost:4569';
 
-const orderControl = orderControlFunc(ordCtrlDB, { tableName: 'DenormOrderControlTest', endpoint });
+const orderControl = orderControlFunc(ordCtrlDB, { tableName: 'DenormOrderControlTest' });
 
 let writer = null;
 let handler = null;

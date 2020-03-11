@@ -30,11 +30,11 @@ class RepositoryManager {
     }
 
     roleDefinitionAdded(org, roleDef) {
-        return this.saveEvent(org.orgId, org._revisionId, orgEvents.roleDefinitionAdded, { orgId: org.orgId, roleDef });
+        return this.saveEvent(org.orgId, org._revisionId, orgEvents.roleDefinitionAdded, { orgId: org.orgId, roleDef: roleDef.toJSON() });
     }
 
     roleDefinitionChanged(org, roleDef) {
-        return this.saveEvent(org.orgId, org._revisionId, orgEvents.roleDefinitionChanged, { orgId: org.orgId, roleDef });
+        return this.saveEvent(org.orgId, org._revisionId, orgEvents.roleDefinitionChanged, { orgId: org.orgId, roleDef: roleDef.toJSON() });
     }
 
     roleDefinitionRemoved(org, roleId) {
@@ -52,6 +52,7 @@ class RepositoryManager {
      * @param {RoleInstance[]} roles 
      */
     rolesAssignedToUser(org, userId, roles) {
+        roles = roles.map(r => r.toJSON());
         return this.saveEvent(org.orgId, org._revisionId, orgEvents.rolesAssignedToUser, { orgId: org.orgId, userId, roles });
     }
 

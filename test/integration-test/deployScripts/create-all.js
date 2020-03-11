@@ -33,6 +33,7 @@ const proj = new Projection({
 async function run() {
     await core.build();
     await proj.build();
+    console.log('MongoDB url:', proj.ProjectionDB.mongoConnString);
     await proj.deploy({
         envVars: {
             ORDER_CONTROL_DB: 'dynamodb',

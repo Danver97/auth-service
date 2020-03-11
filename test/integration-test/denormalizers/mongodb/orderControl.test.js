@@ -3,9 +3,8 @@ const uuid = require('uuid/v4');
 const orderCtrlFunc = require('../../../../infrastructure/denormalizers/mongodb/orderControl');
 
 const ordCtrlDB = process.env.TEST === 'integration' ? 'dynamodb' : 'testdb';
-const endpoint = process.env.CLOUD === 'aws' ? undefined : 'http://localhost:4569';
 
-const orderCtrl = orderCtrlFunc(ordCtrlDB, { tableName: 'DenormOrderControlTest', endpoint });
+const orderCtrl = orderCtrlFunc(ordCtrlDB, { tableName: 'DenormOrderControlTest' });
 
 const repo = orderCtrl.db;
 

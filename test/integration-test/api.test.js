@@ -17,7 +17,7 @@ const dMongoHandlerFunc = require('../../infrastructure/denormalizers/mongodb/ha
 const dMongoWriterFunc = require('../../infrastructure/denormalizers/mongodb/writer');
 const dMongoOrderCtrlFunc = require('../../infrastructure/denormalizers/mongodb/orderControl');
 
-const defaultRoles = require('../../domain/defaultRoles');
+// const defaultRoles = require('../../domain/defaultRoles');
 const checkPerm = require('../../infrastructure/api/permissionChecker');
 
 const User = require('../../domain/models/user.class');
@@ -51,7 +51,7 @@ let handlersLogLevel = 'err';
 let mongoColl;
 
 const waitAsync = ms => new Promise(resolve => setTimeout(resolve, ms));
-const processEventTime = 10000;
+const processEventTime = 12000;
 
 //#region Setup and Utils functions
 
@@ -254,7 +254,7 @@ describe('Api unit test', function () {
         roleDef = results.roleDef;
         roleInstance = results.roleInstance;
 
-        authorizedUser = new User({
+        /* authorizedUser = new User({
             accountId: 14546434341332,
             accountType: 'Google',
             firstname: 'John',
@@ -264,7 +264,7 @@ describe('Api unit test', function () {
                 [orgId1]: defaultRoles.filter(r => r.name === 'OrganizationOwner')
             },
         });
-        authorizedToken = await checkPerm.signJWT(authorizedUser);
+        authorizedToken = await checkPerm.signJWT(authorizedUser); */
         await processEvents();
     });
 
