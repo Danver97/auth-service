@@ -51,7 +51,7 @@ let handlersLogLevel = 'err';
 let mongoColl;
 
 const waitAsync = ms => new Promise(resolve => setTimeout(resolve, ms));
-const processEventTime = 12000;
+const processEventTime = 20000;
 
 //#region Setup and Utils functions
 
@@ -135,8 +135,8 @@ function toJSON(obj) {
 
 describe('Api unit test', function () {
     if (process.env.TEST === 'integration') {
-        this.timeout(40000);
-        this.slow(10000);
+        this.timeout(60000);
+        this.slow(40000);
     }
     let user1 = new User({
         accountId: 14546434341331,
