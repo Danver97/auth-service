@@ -1,8 +1,9 @@
-const JWTSecure = require('@danver97/jwt-secure')('test');
+const JWTSecureFunc = require('@danver97/jwt-secure');
 const ApiError = require('./api.error');
 const PermissionDefinition = require('../../domain/models/permissionDef.class');
 
-const jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: 30, keyExpirationInterval: 30 });
+// const jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: 30, keyExpirationInterval: 30 });
+let jwts;
 
 function init() {
     return jwts.init();
@@ -106,9 +107,16 @@ function checkPermission(options) {
     }];
 }
 
-module.exports = {
-    init,
-    signJWT,
-    verifyToken,
-    checkPermission,
-};
+function exportFunc(JWTSigner) {
+    const JWTSecure = JWTSecureFunc(JWTSigner);
+    jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: 30, keyExpirationInterval: 30 });
+
+    return {
+        init,
+        signJWT,
+        verifyToken,
+        checkPermission,
+    }
+}
+
+module.exports = exportFunc;

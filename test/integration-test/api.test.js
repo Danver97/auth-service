@@ -18,11 +18,9 @@ const dMongoWriterFunc = require('../../infrastructure/denormalizers/mongodb/wri
 const dMongoOrderCtrlFunc = require('../../infrastructure/denormalizers/mongodb/orderControl');
 
 // const defaultRoles = require('../../domain/defaultRoles');
-const checkPerm = require('../../infrastructure/api/permissionChecker');
+const checkPerm = require('../../infrastructure/api/permissionChecker')('test');
 
 const User = require('../../domain/models/user.class');
-const Permission = require('../../domain/models/permission.class');
-const Role = require('../../domain/models/role.class');
 const PermissionDefinition = require('../../domain/models/permissionDef.class');
 const RoleDefinition = require('../../domain/models/roleDef.class');
 const RoleInstance = require('../../domain/models/roleInstance.class');
@@ -152,12 +150,7 @@ describe('Api unit test', function () {
         lastname: 'Doe',
         email: 'john.doe@gmail.com',
     });
-    let authorizedUser;
-    let authorizedToken;
-    const perm1 = new Permission('auth-service', 'addRole');
-    const perm2 = new Permission('auth-service', 'removeRole');
-    let role1 = new Role('waiter1', [perm1]);
-    let role2 = new Role('waiter2', [perm2]);
+    
     const permDef1 = new PermissionDefinition({
         scope: 'reservation-service', name: 'acceptReservation', parameters: {
             orgId: { name: 'OrganizationId', description: 'The id of the organization the user belongs to', required: true },
@@ -188,9 +181,13 @@ describe('Api unit test', function () {
     let roleDefOptions2;
     let roleDef;
     let roleInstance;
+    
     const orgName1 = 'Risto1';
     const orgName2 = 'Risto2';
     let orgId1 = ':orgId';
+    
+    let authorizedUser;
+    let authorizedToken;
 
     before(async function () {
         this.timeout(20000);
@@ -211,14 +208,12 @@ describe('Api unit test', function () {
         await setUpMongoClient(mongoOptions);
         dMongoHandler = await setUpDenormalizer(mongoOptions);
         await setUpQuery(mongoOptions);
-        app = appFunc(orgMgr, userMgr, queryMgr, 'err');
+        app = appFunc({ orgManager: orgMgr, userManager: userMgr, queryManager: queryMgr, logLevel: 'err' });
         req = request(app);
         await checkPerm.init();
     });
 
     beforeEach(async () => {
-        role1 = new Role('waiter1', [perm1]);
-        role2 = new Role('waiter2', [perm2]);
         user1 = new User({
             accountId: 14546434341331,
             accountType: 'Google',

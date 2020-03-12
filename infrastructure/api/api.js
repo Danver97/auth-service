@@ -109,7 +109,8 @@ app.get('/organizations/:orgId', async (req, res, next) => {
 });
 
 
-function exportFunc(orgManager, userManager, queryManager, logLevel) {
+function exportFunc(options = {}) {
+    const { orgManager, userManager, queryManager, logLevel } = options;
     orgMgr = orgManager;
     userMgr = userManager;
     queryMgr = queryManager;
