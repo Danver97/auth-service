@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const permCheck = require('../../infrastructure/api/permissionChecker');
 const errHandler = require('../../infrastructure/api/api_error_handler');
+const permissionDefs = require('../../domain/permissions');
 const defaultRoles = require('../../domain/defaultRoles');
 const User = require('../../domain/models/user.class');
 
@@ -12,7 +13,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.get('/tryit/:orgId', permCheck.verifyToken, permCheck.checkPermission({ roles: 'OrganizationOwner' }), (req, res) => {
+app.get('/tryit/:orgId', permCheck.checkPermission({ permissionDefs: [permissionDefs.rolesList], params: ['orgId'] }), (req, res) => {
     res.json({ try: 'it' });
 });
 app.use(errHandler);
@@ -35,12 +36,14 @@ describe('Access Token utils unit test', function () {
     });
 
     it('tryit', async function () {
-        const jwtPayload = user1.toJSON();
-        const unhautorizedToken = await permCheck.signJWT(jwtPayload);
-        jwtPayload.roles = { [orgId]: defaultRoles.filter(r => r.name === 'OrganizationOwner') };
-        const oldExp = new Date('2020/03/05');
-        const oldToken = await permCheck.signJWT(Object.assign({ exp: oldExp.getTime() }, jwtPayload));
+        const jwtPayload = Object.assign(user1.toJSON(), { roles: { [orgId]: defaultRoles.OrganizationOwner.toRole({ orgId }) } });
+        const jwtDiffOrg = Object.assign(user1.toJSON(), { roles: { [orgId]: defaultRoles.OrganizationOwner.toRole({ orgId: 'org3' }) } });
+
         const token = await permCheck.signJWT(jwtPayload);
+        const diffOrgToken = await permCheck.signJWT(jwtDiffOrg);
+        const unhautorizedToken = await permCheck.signJWT(user1.toJSON());
+        const oldToken = await permCheck.signJWT(Object.assign({ exp: (new Date('2020/03/05')).getTime() }, jwtPayload));
+
         await req.get(`/tryit/${orgId}`)
             .expect(401);
         await req.get(`/tryit/${orgId}`)
@@ -57,6 +60,9 @@ describe('Access Token utils unit test', function () {
             .expect(401);
         await req.get(`/tryit/${orgId}`)
             .set('Authentication', `Bearer ${unhautorizedToken}`)
+            .expect(403);
+        await req.get(`/tryit/${orgId}`)
+            .set('Authentication', `Bearer ${diffOrgToken}`)
             .expect(403);
         await req.get(`/tryit/${orgId}`)
             .set('Authentication', `Bearer ${token}`)

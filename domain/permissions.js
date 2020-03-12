@@ -1,7 +1,7 @@
 const PermissionDefinition = require('./models/permissionDef.class');
 
-const permissionsList = [
-    {
+const permissionsList = {
+    organizationManagement: new PermissionDefinition({
         scope: 'auth-service',
         name: 'organizationManagement',
         description: 'Allows to create or delete the entire organization',
@@ -12,8 +12,8 @@ const permissionsList = [
                 required: true,
             }
         }
-    },
-    {
+    }),
+    rolesList: new PermissionDefinition({
         scope: 'auth-service',
         name: 'rolesList',
         description: 'Allows to get the list of the roles defined in the organization',
@@ -24,8 +24,8 @@ const permissionsList = [
                 required: true,
             }
         }
-    },
-    {
+    }),
+    rolesManagement: new PermissionDefinition({
         scope: 'auth-service',
         name: 'rolesManagement',
         description: 'Allows to create, delete or modify roles in the organization',
@@ -36,8 +36,8 @@ const permissionsList = [
                 required: true,
             }
         }
-    },
-    {
+    }),
+    usersList: new PermissionDefinition({
         scope: 'auth-service',
         name: 'usersList',
         description: 'Allows to get the list of the roles defined in the organization',
@@ -48,8 +48,8 @@ const permissionsList = [
                 required: true,
             }
         }
-    },
-    {
+    }),
+    usersManagement: new PermissionDefinition({
         scope: 'auth-service',
         name: 'usersManagement',
         description: 'Allows to add or remove users from the organization',
@@ -60,8 +60,8 @@ const permissionsList = [
                 required: true,
             }
         }
-    },
-    {
+    }),
+    userRolesList: new PermissionDefinition({
         scope: 'auth-service',
         name: 'userRolesList',
         description: 'Allows to get the list of roles assigned to an user',
@@ -72,8 +72,8 @@ const permissionsList = [
                 required: true,
             }
         }
-    },
-    {
+    }),
+    userRolesManagement: new PermissionDefinition({
         scope: 'auth-service',
         name: 'userRolesManagement',
         description: 'Allows to assign or remove roles from an user',
@@ -84,7 +84,10 @@ const permissionsList = [
                 required: true,
             }
         }
-    },
-];
+    }),
+    toArray() {
+        return Object.values(this).filter(v => typeof v !== 'undefined' && typeof v !== 'function');
+    }
+};
 
-module.exports = permissionsList.map(p => PermissionDefinition.fromObject(p));
+module.exports = permissionsList;

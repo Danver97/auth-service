@@ -1,5 +1,6 @@
 const JWTSecure = require('@danver97/jwt-secure')('test');
 const ApiError = require('./api.error');
+const PermissionDefinition = require('../../domain/models/permissionDef.class');
 
 const jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: 30, keyExpirationInterval: 30 });
 
@@ -18,7 +19,11 @@ async function signJWT(payload) {
 }
 
 async function verifyToken(req, res, next) {
-    console.log('verifyToken')
+    if (req.jwtPayload) {
+        // console.log('token request already verified and decoded.');
+        next();
+        return;
+    }
     const value = req.header('Authentication');
     const tokenRegExp = /^Bearer (.+)$/;
     let token;
@@ -49,47 +54,56 @@ async function verifyToken(req, res, next) {
 }
 
 /**
- * @param {Object} options
- * @param {string|string[]} [options.orgId] For testing purposes
- * @param {string|string[]} options.permissions
- * @param {string|string[]} options.roles
+ * @param {object} options
+ * @param {PermissionDefinition} options.permissionDefs
+ * @param {object} options.params
  */
-function checkPermission(options = {}) {
-    if (!options.permissions && !options.roles)
-        throw new Error(`Missing parameters required at least one between options.permissions and options.roles`);
-    let { permissions = [], roles = [], orgId } = options;
-    if (!Array.isArray(permissions) && typeof permissions === 'string')
-        permissions = [permissions];
-    if (!Array.isArray(roles) && typeof roles === 'string')
-        roles = [roles];
+function checkPermission(options) {
+    if (!options)
+        throw new Error(`Missing parameters: options`);
+    const { permissionDefs = [], params = [] } = options;
+    if (!Array.isArray(permissionDefs) || (permissionDefs.length > 0 && !(permissionDefs[0] instanceof PermissionDefinition)))
+        throw new Error(`permissionDefs must be an array of PermissionDefinition`);
 
-    return function (req, res, next) {
-        orgId = req.params.orgId || req.orgId || orgId;
+    return [verifyToken, function (req, res, next) {
+        const orgId = req.params.orgId || req.orgId;
         if (!orgId) {
             console.warn('Can\'t get orgId from request. Can\'t check for request authorization. The request will be executed without limitations');
             next();
             return;
         }
-        const jwtRolesArr = req.jwtPayload.roles ? req.jwtPayload.roles[orgId] || [] : [];
-        req.jwtRoles = req.jwtRoles || new Set(jwtRolesArr.map(r => r.name));
-        req.jwtPermissions = req.jwtPermissions || new Set(jwtRolesArr.map(r => r.permissions).flat().map(p => p.name));
+        
+        if (!req.jwtPermissions) {
+            req.jwtPermissions = new Map();
+            req.jwtPayload.roles = req.jwtPayload.roles || {}
+            Object.keys(req.jwtPayload.roles).map(k => req.jwtPayload.roles[k].permissions).flat().forEach(p => {
+                req.jwtPermissions.set(p.name, p);
+            });
+        }
+        
+        let hasPermission = false;
+        for (let permDef of permissionDefs) {
+            if (!req.jwtPermissions.has(permDef.name))
+                continue;
+            const perm = req.jwtPermissions.get(permDef.name);
+            let hasParams = true;
+            for (let p of params) {
+                const pVal = req.params[p] || req[p];
+                if (perm.parameters[p] !== pVal) {
+                    hasParams = false;
+                    break;
+                }
+            }
+            hasPermission = hasPermission || hasParams;
+        }
 
-        const hasRole = roles.reduce((acc, curr) => {
-            acc = acc || req.jwtRoles.has(curr);
-            return acc;
-        }, false);
-        const hasPermission = permissions.reduce((acc, curr) => {
-            acc = acc || req.jwtPermissions.has(curr);
-            return acc;
-        }, false);
-
-        if (!hasPermission && !hasRole) {
+        if (!hasPermission) {
             const err = ApiError.notAuthorizedError('User doesn\'t have the role or the permission');
             next(err);
             return;
         }
         next();
-    };
+    }];
 }
 
 module.exports = {
