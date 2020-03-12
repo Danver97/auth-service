@@ -20,8 +20,9 @@ async function run() {
     queryMgr = await queryManagerFunc(mongoOptions);
     // !!!!
 
+    await permChecker.init();
 
-    app = appFunc({ orgManager: orgMgr, userManager: userMgr, queryManager: queryMgr, logLevel: 'err' });
+    app = appFunc({ orgManager: orgMgr, userManager: userMgr, queryManager: queryMgr, permChecker, logLevel: 'err' });
     app.listen(ENV.PORT);
     console.log(`Running on port ${ENV.PORT}`);
 }

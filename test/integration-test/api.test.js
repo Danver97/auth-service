@@ -17,7 +17,7 @@ const dMongoHandlerFunc = require('../../infrastructure/denormalizers/mongodb/ha
 const dMongoWriterFunc = require('../../infrastructure/denormalizers/mongodb/writer');
 const dMongoOrderCtrlFunc = require('../../infrastructure/denormalizers/mongodb/orderControl');
 
-// const defaultRoles = require('../../domain/defaultRoles');
+const defaultRoles = require('../../domain/defaultRoles');
 const checkPermFunc = require('../../infrastructure/api/permissionChecker');
 
 const User = require('../../domain/models/user.class');
@@ -188,8 +188,8 @@ describe('Api unit test', function () {
     const orgName2 = 'Risto2';
     let orgId1 = ':orgId';
     
-    let authorizedUser;
     let authorizedToken;
+    let unauthorizedToken;
 
     before(async function () {
         this.timeout(20000);
@@ -210,7 +210,7 @@ describe('Api unit test', function () {
         await setUpMongoClient(mongoOptions);
         dMongoHandler = await setUpDenormalizer(mongoOptions);
         await setUpQuery(mongoOptions);
-        app = appFunc({ orgManager: orgMgr, userManager: userMgr, queryManager: queryMgr, logLevel: 'err' });
+        app = appFunc({ orgManager: orgMgr, userManager: userMgr, queryManager: queryMgr, permChecker: checkPerm, logLevel: 'err' });
         req = request(app);
         await checkPerm.init();
     });
@@ -251,17 +251,21 @@ describe('Api unit test', function () {
         roleDef = results.roleDef;
         roleInstance = results.roleInstance;
 
-        /* authorizedUser = new User({
+        authorizedToken = await checkPerm.signJWT(Object.assign(new User({
             accountId: 14546434341332,
             accountType: 'Google',
             firstname: 'John',
             lastname: 'Doe',
             email: 'john.doe@gmail.com',
-            roles: {
-                [orgId1]: defaultRoles.filter(r => r.name === 'OrganizationOwner')
-            },
-        });
-        authorizedToken = await checkPerm.signJWT(authorizedUser); */
+        }), { roles: { [orgId1]: [defaultRoles.OrganizationOwner.toRole({ orgId: orgId1 })] } }));
+        unauthorizedToken = await checkPerm.signJWT(new User({
+            accountId: 14546434341332,
+            accountType: 'Google',
+            firstname: 'Jack',
+            lastname: 'Smith',
+            email: 'jack.smith@gmail.com',
+        }));
+
         await processEvents();
     });
 
@@ -279,6 +283,7 @@ describe('Api unit test', function () {
 
     it('POST\t/organizations', async function () {
         await req.post('/organizations')
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
             .set('Content-Type', 'application/json')
             .send({ name: orgName2 })
             .expect(200);
@@ -286,8 +291,12 @@ describe('Api unit test', function () {
 
     it(`GET\t/organizations/${orgId1}`, async function () {
         await req.get(`/organizations/blablabla`)
-            .expect(404);
+            .expect(401);
+        await req.get(`/organizations/blablabla`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
         await req.get(`/organizations/${orgId1}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(res => {
                 const data = res.body.data;
                 const links = res.body.links;
@@ -314,8 +323,12 @@ describe('Api unit test', function () {
 
     it(`GET\t/organizations/${orgId1}/roles`, async function () {
         await req.get(`/organizations/blablabla/roles`)
-            .expect(404);
+            .expect(401);
+        await req.get(`/organizations/blablabla/roles`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
         await req.get(`/organizations/${orgId1}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(res => {
                 const expectRoleDef = toJSON(roleDef);
                 expectRoleDef._id = expectRoleDef.roleDefId;
@@ -336,11 +349,15 @@ describe('Api unit test', function () {
 
     it(`POST\t/organizations/${orgId1}/roles`, async function () {
         await req.post(`/organizations/blablabla/roles`)
-            .expect(400);
+            .expect(401);
         await req.post(`/organizations/blablabla/roles`)
-            .send(roleDefOptions2)
-            .expect(404);
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
         await req.post(`/organizations/${orgId1}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
+            .expect(400);
+        await req.post(`/organizations/${orgId1}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .set('Content-Type', 'application/json')
             .send(roleDefOptions2)
             .expect(res => {
@@ -359,11 +376,16 @@ describe('Api unit test', function () {
     });
 
     it(`GET\t/organizations/${orgId1}/roles/:roleDefId`, async function () {
-        await req.get(`/organizations/blablabla/roles/${roleDef.roleDefId}`)
-            .expect(404);
+        await req.get(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
+            .expect(401);
         await req.get(`/organizations/${orgId1}/roles/blablabla`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
+        await req.get(`/organizations/${orgId1}/roles/blablabla`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(404);
         await req.get(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(res => {
                 const expectedRoleDef = toJSON(roleDef);
                 expectedRoleDef._id = expectedRoleDef.roleDefId;
@@ -383,16 +405,23 @@ describe('Api unit test', function () {
 
     it(`PUT\t/organizations/${orgId1}/roles/:roleDefId`, async function () {
         await req.put(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
-            .expect(400);
+            .expect(401);
         await req.put(`/organizations/blablabla/roles/${roleDef.roleDefId}`)
+        .set('Authorization', `Bearer ${unauthorizedToken}`)
             .set('Content-Type', 'application/json')
             .send({ name: 'newName', permissions: [permDef2] })
-            .expect(404);
+            .expect(403);
+        
+        await req.put(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
+            .expect(400);
         await req.put(`/organizations/${orgId1}/roles/blablabla`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .set('Content-Type', 'application/json')
             .send({ name: 'newName', permissions: [permDef2] })
             .expect(404);
         await req.put(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .set('Content-Type', 'application/json')
             .send({ name: 'newName', paramMapping: {
                 'orgId': {
@@ -409,17 +438,29 @@ describe('Api unit test', function () {
 
     it(`DELETE\t/organizations/${orgId1}/roles/:roleDefId`, async function () {
         await req.delete(`/organizations/blablabla/roles/${roleDef.roleDefId}`)
-            .expect(404);
+            .expect(401);
+        await req.delete(`/organizations/blablabla/roles/${roleDef.roleDefId}`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
+        await req.delete(`/organizations/blablabla/roles/${roleDef.roleDefId}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
+            .expect(403);
         await req.delete(`/organizations/${orgId1}/roles/blablabla`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(404);
         await req.delete(`/organizations/${orgId1}/roles/${roleDef.roleDefId}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(200);
     });
 
     it(`GET\t/organizations/${orgId1}/users`, async function () {        
         await req.get(`/organizations/blablabla/users`)
-            .expect(404);
+            .expect(401);
+        await req.get(`/organizations/blablabla/users`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
         await req.get(`/organizations/${orgId1}/users`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(res => {
                 const userExpected = Object.assign({}, user1);
                 userExpected._id = user1.uniqueId;
@@ -442,14 +483,21 @@ describe('Api unit test', function () {
 
     it(`POST\t/organizations/${orgId1}/users`, async function () {
         await req.post(`/organizations/blablabla/users`)
-            .expect(400);
+            .expect(401);
         await req.post(`/organizations/blablabla/users`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
             .send({ userId: user1.uniqueId })
-            .expect(404);
+            .expect(403);
+            
         await req.post(`/organizations/${orgId1}/users`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
+            .expect(400);
+        await req.post(`/organizations/${orgId1}/users`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .send({ userId: user1.uniqueId })
             .expect(400);
         await req.post(`/organizations/${orgId1}/users`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .set('Content-Type', 'application/json')
             .send({ userId: user2.uniqueId })
             .expect(200);
@@ -457,19 +505,30 @@ describe('Api unit test', function () {
 
     it(`DELETE\t/organizations/${orgId1}/users/${user1.uniqueId}`, async function () {
         await req.delete(`/organizations/blablabla/users/${user1.uniqueId}`)
-            .expect(404);
+            .expect(401);
+        await req.delete(`/organizations/blablabla/users/${user1.uniqueId}`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
+
         await req.delete(`/organizations/${orgId1}/users/${user2.uniqueId}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(404);
         await req.delete(`/organizations/${orgId1}/users/${user1.uniqueId}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(200);
     });
 
     it(`GET\t/organizations/${orgId1}/users/${user1.uniqueId}/roles`, async function () {
         await req.get(`/organizations/blablabla/roles/${user1.uniqueId}/roles`)
-            .expect(404);
+            .expect(401);
         await req.get(`/organizations/${orgId1}/users/blablabla/roles`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
+        await req.get(`/organizations/${orgId1}/users/blablabla/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(404);
         await req.get(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(res => {
                 roleInstance.orgId = orgId1;
                 const expected = [{
@@ -485,25 +544,34 @@ describe('Api unit test', function () {
     });
 
     it(`POST\t/organizations/${orgId1}/users/${user1.uniqueId}/roles`, async function () {
+        await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .expect(401);
+        await req.post(`/organizations/blablabla/users/${user1.uniqueId}/roles`)
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .send({ roles: [roleInstance.toJSON()] })
+            .expect(403);
 
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(400);
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .send({ roles: ['string'] })
             .expect(400);
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .send({ roles: [{}] })
             .expect(400);
-        await req.post(`/organizations/blablabla/roles/${user1.uniqueId}/roles`)
-            .send({ roles: [roleInstance.toJSON()] })
-            .expect(404);
         await req.post(`/organizations/${orgId1}/users/blablabla/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .send({ roles: [roleInstance.toJSON()] })
             .expect(404);
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .send({ roles: [{ roleDefId: 'notExistent' }] })
             .expect(400);
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .send({ roles: [roleInstance.toJSON()] })
             .expect(200);
 
@@ -514,17 +582,23 @@ describe('Api unit test', function () {
         const roleInstance2 = new RoleInstance({ roleDef: roleDef2, paramValues: { orgId: orgId1 } });
         // Actual request
         await req.post(`/organizations/${orgId1}/users/${user1.uniqueId}/roles`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .send({ roles: [roleInstance2.toJSON()] })
             .expect(200);
     });
 
     it(`DELETE\t/organizations/${orgId1}/users/${user1.uniqueId}/roles/:roleDefId`, async function () {
+        await req.delete(`/organizations/${orgId1}/users/${user1.uniqueId}/roles/${roleDef.roleDefId}`)
+            .expect(401);
         await req.delete(`/organizations/blablabla/users/${user1.uniqueId}/roles/${roleDef.roleDefId}`)
-            .expect(404);
+            .set('Authorization', `Bearer ${unauthorizedToken}`)
+            .expect(403);
         await req.delete(`/organizations/${orgId1}/users/${user1.uniqueId}/roles/blablabla`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(404);
         // Actual request
         await req.delete(`/organizations/${orgId1}/users/${user1.uniqueId}/roles/${roleDef.roleDefId}`)
+            .set('Authorization', `Bearer ${authorizedToken}`)
             .expect(200);
     });
 

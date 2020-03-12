@@ -8,8 +8,8 @@ const presentation = require('./presentation');
 const logger = require('./api_logger');
 const errHandler = require('./api_error_handler');
 const Validator = require('../../lib/tokenValidator').Validator;
-const permCheck = require('./permissionChecker');
 const ENV = require('../../lib/env');
+const permissionDefs = require('../../domain/permissions');
 
 const ApiError = require('./api.error');
 
@@ -27,6 +27,8 @@ const addParam = apiutils.addParam;
 let orgMgr;
 let userMgr;
 let queryMgr;
+
+let permCheck;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -74,51 +76,53 @@ app.post('/login', async (req, res) => {
     res.json({ token: jwtToken });
 });
 
-// app.use('/organizations', permCheck.verifyToken);
-
-app.post('/organizations', async (req, res) => {
-    const name = req.body.name;
-    if (!name) {
-        apiutils.clientError(res, 'Missing name property from body');
-        return;
-    }
-
-    let org;
-    try {
-        org = await orgMgr.organizationCreated(name);
-    } catch (error) {
-        next(error);
-        return;
-    }
-    res.json(presentation.orgJSON(org));
-});
-
-app.use('/organizations/:orgId', checkParam('orgId'), addParam('orgId'));
-
-app.get('/organizations/:orgId', async (req, res, next) => {
-    const orgId = req.params.orgId;
-    // let org = await queryMgr.getOrganization(orgId);
-    let org;
-    try {
-        org = await queryMgr.getOrganization(orgId);
-    } catch (error) {
-        next(error);
-        return;
-    }
-    res.json(presentation.orgJSON(org));
-});
-
 
 function exportFunc(options = {}) {
-    const { orgManager, userManager, queryManager, logLevel } = options;
+    const { orgManager, userManager, queryManager, permChecker, logLevel } = options;
     orgMgr = orgManager;
     userMgr = userManager;
     queryMgr = queryManager;
-    logger.setLogLevel(logLevel);    
+    permCheck = permChecker;
+    logger.setLogLevel(logLevel);
 
-    app.use('/organizations/:orgId/roles', orgRolesAPIFunc(orgManager, queryManager));
-    app.use('/organizations/:orgId/users', orgUsersAPIFunc(orgManager, queryManager));
-    app.use('/users/:userId', usersAPIFunc(userManager, queryManager));
+    app.use('/organizations', permCheck.verifyToken);
+
+    app.post('/organizations', async (req, res) => {
+        const name = req.body.name;
+        if (!name) {
+            apiutils.clientError(res, 'Missing name property from body');
+            return;
+        }
+
+        let org;
+        try {
+            org = await orgMgr.organizationCreated(name);
+        } catch (error) {
+            next(error);
+            return;
+        }
+        res.json(presentation.orgJSON(org));
+    });
+
+    app.use('/organizations/:orgId', checkParam('orgId'), addParam('orgId'));
+
+    app.get('/organizations/:orgId', permCheck.checkPermission({ permissionDefs: [permissionDefs.organizationManagement], params: ['orgId'] }),
+        async (req, res, next) => {
+            const orgId = req.params.orgId;
+            // let org = await queryMgr.getOrganization(orgId);
+            let org;
+            try {
+                org = await queryMgr.getOrganization(orgId);
+            } catch (error) {
+                next(error);
+                return;
+            }
+            res.json(presentation.orgJSON(org));
+        });
+
+    app.use('/organizations/:orgId/roles', orgRolesAPIFunc(orgManager, queryManager, permCheck));
+    app.use('/organizations/:orgId/users', orgUsersAPIFunc(orgManager, queryManager, permCheck));
+    app.use('/users/:userId', usersAPIFunc(userManager, queryManager, permCheck));
 
     app.use(errHandler);
 
