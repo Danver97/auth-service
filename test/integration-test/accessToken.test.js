@@ -36,8 +36,8 @@ describe('Access Token utils unit test', function () {
     });
 
     it('tryit', async function () {
-        const jwtPayload = Object.assign(user1.toJSON(), { roles: { [orgId]: defaultRoles.OrganizationOwner.toRole({ orgId }) } });
-        const jwtDiffOrg = Object.assign(user1.toJSON(), { roles: { [orgId]: defaultRoles.OrganizationOwner.toRole({ orgId: 'org3' }) } });
+        const jwtPayload = Object.assign(user1.toJSON(), { roles: { [orgId]: [defaultRoles.OrganizationOwner.toRole({ orgId })] } });
+        const jwtDiffOrg = Object.assign(user1.toJSON(), { roles: { [orgId]: [defaultRoles.OrganizationOwner.toRole({ orgId: 'org3' })] } });
 
         const token = await permCheck.signJWT(jwtPayload);
         const diffOrgToken = await permCheck.signJWT(jwtDiffOrg);
@@ -47,25 +47,25 @@ describe('Access Token utils unit test', function () {
         await req.get(`/tryit/${orgId}`)
             .expect(401);
         await req.get(`/tryit/${orgId}`)
-            .set('Authentication', 'Bearer')
+            .set('Authorization', 'Bearer')
             .expect(401);
         await req.get(`/tryit/${orgId}`)
-            .set('Authentication', 'Bearer ')
+            .set('Authorization', 'Bearer ')
             .expect(401);
         await req.get(`/tryit/${orgId}`)
-            .set('Authentication', 'Bearer aaaa.bbbbbb.cccccc')
+            .set('Authorization', 'Bearer aaaa.bbbbbb.cccccc')
             .expect(401);
         await req.get(`/tryit/${orgId}`)
-            .set('Authentication', `Bearer ${oldToken}`)
+            .set('Authorization', `Bearer ${oldToken}`)
             .expect(401);
         await req.get(`/tryit/${orgId}`)
-            .set('Authentication', `Bearer ${unhautorizedToken}`)
+            .set('Authorization', `Bearer ${unhautorizedToken}`)
             .expect(403);
         await req.get(`/tryit/${orgId}`)
-            .set('Authentication', `Bearer ${diffOrgToken}`)
+            .set('Authorization', `Bearer ${diffOrgToken}`)
             .expect(403);
         await req.get(`/tryit/${orgId}`)
-            .set('Authentication', `Bearer ${token}`)
+            .set('Authorization', `Bearer ${token}`)
             .expect({ try: 'it' })
             .expect(200);
     });

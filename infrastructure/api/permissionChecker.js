@@ -25,7 +25,7 @@ async function verifyToken(req, res, next) {
         next();
         return;
     }
-    const value = req.header('Authentication');
+    const value = req.header('Authorization');
     const tokenRegExp = /^Bearer (.+)$/;
     let token;
     if (tokenRegExp.test(value))
@@ -66,18 +66,17 @@ function checkPermission(options) {
     if (!Array.isArray(permissionDefs) || (permissionDefs.length > 0 && !(permissionDefs[0] instanceof PermissionDefinition)))
         throw new Error(`permissionDefs must be an array of PermissionDefinition`);
 
-    return [verifyToken, function (req, res, next) {
-        const orgId = req.params.orgId || req.orgId;
-        if (!orgId) {
-            console.warn('Can\'t get orgId from request. Can\'t check for request authorization. The request will be executed without limitations');
-            next();
-            return;
-        }
-        
+    return [verifyToken, function (req, res, next) {        
         if (!req.jwtPermissions) {
             req.jwtPermissions = new Map();
-            req.jwtPayload.roles = req.jwtPayload.roles || {}
-            Object.keys(req.jwtPayload.roles).map(k => req.jwtPayload.roles[k].permissions).flat().forEach(p => {
+            req.jwtPayload.roles = req.jwtPayload.roles || {};
+            
+            Object.keys(req.jwtPayload.roles).map(k => {
+                const rolesList = req.jwtPayload.roles[k];
+                if (Array.isArray(rolesList))
+                    return rolesList.map(r => r.permissions);
+                return [rolesList.permissions]
+            }).flat(3).forEach(p => {
                 req.jwtPermissions.set(p.name, p);
             });
         }
@@ -97,7 +96,7 @@ function checkPermission(options) {
             }
             hasPermission = hasPermission || hasParams;
         }
-
+        
         if (!hasPermission) {
             const err = ApiError.notAuthorizedError('User doesn\'t have the role or the permission');
             next(err);
