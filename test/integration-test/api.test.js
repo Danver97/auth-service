@@ -18,7 +18,7 @@ const dMongoWriterFunc = require('../../infrastructure/denormalizers/mongodb/wri
 const dMongoOrderCtrlFunc = require('../../infrastructure/denormalizers/mongodb/orderControl');
 
 // const defaultRoles = require('../../domain/defaultRoles');
-const checkPerm = require('../../infrastructure/api/permissionChecker')('test');
+const checkPermFunc = require('../../infrastructure/api/permissionChecker');
 
 const User = require('../../domain/models/user.class');
 const PermissionDefinition = require('../../domain/models/permissionDef.class');
@@ -41,6 +41,8 @@ const eventStoreType = (!process.env.TEST || process.env.TEST === 'unit') ? 'tes
 const repo = repoFunc(eventStoreType);
 const orgMgr = new OrganizationManager(repo);
 const userMgr = new UserManager(repo);
+
+const checkPerm = checkPermFunc(process.env.TEST === 'integration' ? 'aws' : 'test');
 
 const mongod = new MongoMemoryServer();
 let dMongoHandler;
@@ -181,7 +183,7 @@ describe('Api unit test', function () {
     let roleDefOptions2;
     let roleDef;
     let roleInstance;
-    
+
     const orgName1 = 'Risto1';
     const orgName2 = 'Risto2';
     let orgId1 = ':orgId';
