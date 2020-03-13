@@ -1,10 +1,19 @@
-const Core = require('../../../lib/scripts/Core.class');
-const Projection = require('../../../lib/scripts/Projection.class');
+// const Core = require('../../../lib/scripts/Core.class');
+// const Projection = require('../../../lib/scripts/Projection.class');
+const Core = require('@danver97/event-sourcing/deployScripts/Core.class')
+const Projection = require('@danver97/event-sourcing/deployScripts/Projection.class')
 
+const region = process.env.AWS_DEFAULT_REGION || 'eu-west-2';
+const credentials = {
+    accessKeyId: process.env.DEPLOY_AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.DEPLOY_AWS_SECRET_ACCESS_KEY,
+};
 const environment = process.env.DEPLOY_ENVIRONMENT || 'dev';
 const microserviceName = process.env.MICROSERVICE_NAME;
 
 const core = new Core({
+    region,
+    credentials,
     environment,
     microserviceName,
     TableName: `${microserviceName}EventStreamTable`,
@@ -13,6 +22,8 @@ const core = new Core({
 });
 
 const proj = new Projection({
+    region,
+    credentials,
     environment,
     microserviceName,
     TableName: 'DenormOrderControlTest',

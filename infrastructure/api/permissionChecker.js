@@ -3,9 +3,22 @@ const ApiError = require('./api.error');
 const PermissionDefinition = require('../../domain/models/permissionDef.class');
 
 // const jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: 30, keyExpirationInterval: 30 });
+let Signer;
 let jwts;
 
 function init() {
+    const JWTSecure = JWTSecureFunc(Signer);
+    switch (Signer) {
+        case 'aws':
+            const oneDaySeconds = 60*60*24;
+            jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: oneDaySeconds, keyExpirationInterval: 7 });
+            break;
+        case 'test':
+            jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: 30, keyExpirationInterval: 30 });
+            break;
+        default:
+            throw new Error(`JWTSigner not supported. Supported values 'aws', 'test'. Found: ${Signer}`);
+    }
     return jwts.init();
 }
 
@@ -39,6 +52,7 @@ async function verifyToken(req, res, next) {
     try {
         jwtPayload = await jwts.verify(token);
     } catch (err) {
+        console.log(err);
         err = ApiError.invalidTokenError('Token is invalid');
         next(err);
         return;
@@ -107,8 +121,8 @@ function checkPermission(options) {
 }
 
 function exportFunc(JWTSigner) {
-    const JWTSecure = JWTSecureFunc(JWTSigner);
-    jwts = new JWTSecure({ rsabit: 2048, algo: 'RS512', rotationInterval: 30, keyExpirationInterval: 30 });
+    console.log('Signer:', JWTSigner)
+    Signer = JWTSigner;
 
     return {
         init,
